@@ -18,6 +18,7 @@
 #
 
 PROGS = build_graph_naively naive_batch_query \
+	normalize_feature_vectors compute_normalizers \
 	generate_hash_function populate_hash_table build_graph
 
 SMITHLAB_CPP = ../smithlab_cpp
