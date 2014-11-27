@@ -18,7 +18,7 @@
 #
 
 PROGS = build_graph_naively naive_batch_query \
-	generate_hash_function
+	generate_hash_function populate_hash_table
 
 SMITHLAB_CPP = ../smithlab_cpp
 COMMON = ../common
@@ -56,6 +56,9 @@ endif
 all: $(PROGS)
 
 generate_hash_function : $(addprefix $(COMMON)/, LSHAngleHashFunction.o)
+
+populate_hash_table : $(addprefix $(COMMON)/, LSHAngleHashTable.o \
+	LSHAngleHashFunction.o)
 
 build_graph_naively : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o)
 
