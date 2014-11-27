@@ -17,7 +17,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-PROGS = build_graph_naively naive_batch_query
+PROGS = build_graph_naively naive_batch_query \
+	generate_hash_function
 
 SMITHLAB_CPP = ../smithlab_cpp
 COMMON = ../common
@@ -53,6 +54,8 @@ CXXFLAGS += $(OPTFLAGS)
 endif
 
 all: $(PROGS)
+
+generate_hash_function : $(addprefix $(COMMON)/, LSHAngleHashFunction.o)
 
 build_graph_naively : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o)
 
