@@ -1,4 +1,4 @@
-/*    Part of SMITHLAB software
+/*    Part of AMORDAD software
  *
  *    Copyright (C) 2014 University of Southern California and
  *                       Andrew D. Smith
