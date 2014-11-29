@@ -24,6 +24,9 @@
 #include <tr1/unordered_map>
 #include <numeric>
 
+#include <gsl/gsl_histogram.h>
+#include <gsl/gsl_statistics_double.h>
+
 #include "OptionParser.hpp"
 #include "smithlab_os.hpp"
 
@@ -39,14 +42,17 @@ using std::transform;
 
 
 static void
-remove_tails(const double tail_fraction, vector<double> &vals) {
-  const size_t offset = tail_fraction*vals.size();
-  const size_t number_to_copy = vals.size() - 2*offset;
-  copy(vals.begin() + offset, vals.begin() + offset + number_to_copy,
-       vals.begin());
-  vals.erase(vals.begin() + number_to_copy, vals.end());  
+remove_upper_tail(const size_t tail_size, vector<double> &vals) {
+  assert(tail_size < vals.size());
+  vals.erase(vals.end() - tail_size, vals.end());
 }
 
+
+static void
+remove_lower_tail(const size_t tail_size, vector<double> &vals) {
+  assert(tail_size < vals.size());
+  vals.erase(copy(vals.begin() + tail_size, vals.end(), vals.begin()));
+}
 
 
 int
@@ -58,16 +64,23 @@ main(int argc, const char **argv) {
     string outfile;
     string features_file;
 
-    double tail_fraction = 0.01;
-    
+    double tail_fraction = 0.10;
+    bool use_upper_tail = false;
+    bool use_lower_tail = false;
+    bool use_median_values = false;
+
     /****************** COMMAND LINE OPTIONS ********************/
-    OptionParser opt_parse(strip_path(argv[0]), 
+    OptionParser opt_parse(strip_path(argv[0]),
                            "compute mean and sd for each feature",
                            "<vectors-path-file>");
     opt_parse.add_opt("out", 'o', "output file (default: stdout)",
                       false, outfile);
+    opt_parse.add_opt("upper", 'u', "trim upper tail", false, use_upper_tail);
+    opt_parse.add_opt("lower", 'l', "trim lower tail", false, use_lower_tail);
+    opt_parse.add_opt("med", 'M', "use medians", false, use_median_values);
+    opt_parse.add_opt("tail", 't', "size of tail to remove", false, tail_fraction);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
-    
+
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
     if (argc == 1 || opt_parse.help_requested()) {
@@ -89,10 +102,11 @@ main(int argc, const char **argv) {
     }
     const string vectors_path_file(leftover_args.front());
     /****************** END COMMAND LINE OPTIONS *****************/
-    
+
+    ////////////////////////////////////////////////////////////
+    //// GET FEATURE VECTOR FILE NAMES
     if (VERBOSE)
       cerr << "extracting feature vector paths" << endl;
-    // GET FEATURE VECTOR FILE NAMES
     std::ifstream paths_in(vectors_path_file.c_str());
     if (!paths_in)
       throw SMITHLABException("bad feature vectors locations: " +
@@ -101,16 +115,14 @@ main(int argc, const char **argv) {
     string feat_vec_file;
     while (paths_in >> feat_vec_file)
       feat_vec_filenames.push_back(feat_vec_file);
-    
-    if (VERBOSE)
-      cerr << "processing feature vectors" << endl;
 
+    ////////////////////////////////////////////////////////////
+    //// READ IN THE FEATURE VECTORS
     vector<vector<double> > vals;
     vector<string> labels;
-    
-    // ITERATE OVER EACH FEATURE VECTOR FILE AND HASH IT
+    size_t n_values = feat_vec_filenames.size();
     for (size_t i = 0; i < feat_vec_filenames.size(); ++i) {
-      
+
       FeatureVector fv;
       vector<string> curr_labels;
       load_features_and_labels(feat_vec_filenames[i], fv, curr_labels);
@@ -118,43 +130,76 @@ main(int argc, const char **argv) {
         vals = vector<vector<double> >(fv.size(), vector<double>());
         labels.swap(curr_labels);
       }
-      else if (labels != curr_labels) 
+      else if (labels != curr_labels)
         throw SMITHLABException("inconsistent labels: " +
                                 feat_vec_filenames[0] + "\t" +
                                 feat_vec_filenames[i]);
       for (size_t j = 0; j < vals.size(); ++j)
         vals[j].push_back(fv[j]);
-      
+
       if (VERBOSE)
-        cerr << '\r' << percent(i, feat_vec_filenames.size()) << "%\r";
+        cerr << '\r' << "loading feature vectors: "
+             << percent(i, n_values) << "%\r";
     }
     if (VERBOSE)
-      cerr << '\r' << "100%" << endl;
+      cerr << '\r' << "loading feature vectors: 100%" << endl;
 
-    // shift the vals
-    for (size_t i = 0; i < vals.size(); ++i)
-      remove_tails(tail_fraction, vals[i]);
-    
-    vector<double> means(vals.size()), sds(vals.size());
-    for (size_t j = 0; j < vals.size(); ++j)
-      means[j] = accumulate(vals[j].begin(), vals[j].end(), 0.0)/vals[j].size();
-    
-    for (size_t j = 0; j < vals.size(); ++j) {
-      transform(vals[j].begin(), vals[j].end(), vals[j].begin(),
-                bind2nd(std::minus<double>(), means[j]));    
-      transform(vals[j].begin(), vals[j].end(), vals[j].begin(), 
-                std::ptr_fun(::fabs));
-      sds[j] = accumulate(vals[j].begin(), vals[j].end(), 0.0)/vals[j].size();
+    ////////////////////////////////////////////////////////////
+    //// REMOVE OUTLIER VALUES
+    const size_t tail_size = tail_fraction*static_cast<double>(n_values);
+    if (VERBOSE)
+      cerr << "tail size: " << tail_size << endl;
+    for (size_t i = 0; i < vals.size(); ++i) {
+      sort(vals[i].begin(), vals[i].end());
+      if (use_upper_tail) {
+        remove_upper_tail(tail_size, vals[i]);
+        n_values -= tail_size;
+      }
+      if (use_lower_tail) {
+        remove_lower_tail(tail_size, vals[i]);
+        n_values -= tail_size;
+      }
+      if (VERBOSE)
+        cerr << '\r' << "trimming feature vectors: "
+             << percent(i, vals.size()) << "%\r";
     }
-    
-    // write the hash table to disk
+    if (VERBOSE)
+      cerr << '\r' << "trimming feature vectors: 100%" << endl;
+
+    ////////////////////////////////////////////////////////////
+    //// COMPUTE MEANS AND VARIANCES
+    vector<double> means(vals.size(), 0.0);
+    vector<double> medians(vals.size(), 0.0);
+    for (size_t i = 0; i < vals.size(); ++i) {
+      medians[i] = gsl_stats_median_from_sorted_data(&vals[i].front(), 1, n_values);
+      means[i] = gsl_stats_mean(&vals[i].front(), 1, n_values);
+      if (VERBOSE)
+        cerr << '\r' << "computing means/medians: " << percent(i, vals.size()) << "%\r";
+    }
+    if (VERBOSE)
+      cerr << '\r' << "computing means/medians: 100%" << endl;
+
+    vector<double> sds(vals.size(), 0.0);
+    for (size_t i = 0; i < vals.size(); ++i) {
+      sds[i] = gsl_stats_sd_m(&vals[i].front(), 1, n_values, means[i]);
+      if (VERBOSE)
+        cerr << '\r' << "computing variances: "
+             << percent(i, vals.size()) << "%\r";
+    }
+    if (VERBOSE)
+      cerr << '\r' << "computing variances: 100%" << endl;
+
+    ////////////////////////////////////////////////////////////
+    //// WRITE THE NORMALIZERS TO DISK
     std::ofstream of;
     if (!outfile.empty()) of.open(outfile.c_str());
+    if (!of) throw SMITHLABException("cannot write to file: " + outfile);
     std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
-    
-    for (size_t i = 0; i < means.size(); ++i)
-      out << labels[i] << '\t' << means[i] << '\t' << sds[i] << endl;
 
+    for (size_t i = 0; i < means.size(); ++i)
+      out << labels[i] << '\t'
+          << (use_median_values ? medians[i] : means[i]) << '\t'
+          << sds[i] << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
