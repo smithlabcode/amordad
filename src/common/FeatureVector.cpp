@@ -112,9 +112,9 @@ load_features_and_labels(const string &filename,
 double
 FeatureVector::compute_angle(const FeatureVector &other) const {
   assert(values.size() == other.values.size());
-  const double angle = 
-    inner_product(values.begin(), values.end(), 
-                  other.values.begin(), 0.0)/(norm*other.norm);
+  double angle = inner_product(values.begin(), values.end(), 
+                               other.values.begin(), 0.0)/(norm*other.norm);
+  angle = std::max(-1.0, std::min(1.0, angle));
   assert(abs(angle) <= 1);
   return acos(angle); // scale factor 180/M_PI for "degree" conversion
 }
