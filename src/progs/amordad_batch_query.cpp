@@ -54,28 +54,6 @@ typedef LSHAngleHashTable LSHTab;
 typedef LSHAngleHashFunction LSHFun;
 
 
-size_t comparisons = 0;
-
-static void
-get_feature_vector(const string &id,
-                   const unordered_map<string, string> &fv_path_lookup,
-                   FeatureVector &fv) {
-  unordered_map<string, string>::const_iterator i(fv_path_lookup.find(id));
-  if (i == fv_path_lookup.end())
-    throw SMITHLABException("cannot find file for: " + id);
-
-  std::ifstream in(i->second.c_str());
-  if (!in)
-    throw SMITHLABException("bad feature vector file: " + i->second);
-  in >> fv;
-}
-
-
-/******************************************************************************
- * Do the query process and returns the
- * index of the first hash table that identifies the query.
- *****************************************************************************/
-
 struct Result {
   Result(const string &i, const double v) : id(i), val(v) {}
   Result() : val(std::numeric_limits<double>::max()) {}
@@ -91,38 +69,63 @@ operator<<(std::ostream &os, const Result &r) {
 }
 
 
-static void
-evaluate_candidates(const unordered_map<string, string>& fv_file_lookup,
-                    const FeatureVector &query,
-                    const size_t n_neighbors,
-                    const double max_proximity_radius,
-                    const unordered_set<string> &candidates,
-                    vector<Result> &results) {
+// static void
+// get_feature_vector(const string &id,
+//                    const unordered_map<string, string> &fv_path_lookup,
+//                    FeatureVector &fv) {
+//   unordered_map<string, string>::const_iterator i(fv_path_lookup.find(id));
+//   if (i == fv_path_lookup.end())
+//     throw SMITHLABException("cannot find file for: " + id);
+
+//   std::ifstream in(i->second.c_str());
+//   if (!in)
+//     throw SMITHLABException("bad feature vector file: " + i->second);
+//   in >> fv;
+// }
+
+// static void
+// get_feature_vector_paths_lookup(const string &fv_paths_file,
+//                                 unordered_map<string, string> &fv_paths_lookup) {
+//   std::ifstream in(fv_paths_file.c_str());
+//   if (!in)
+//     throw SMITHLABException("bad feature vector paths file: " + fv_paths_file);
+
+//   string fv_id, fv_path;
+//   while (in >> fv_id >> fv_path)
+//     fv_paths_lookup[fv_id] = fv_path;
+// }
+
+// static void
+// evaluate_candidates(const unordered_map<string, string>& fv_file_lookup,
+//                     const FeatureVector &query,
+//                     const size_t n_neighbors,
+//                     const double max_proximity_radius,
+//                     const unordered_set<string> &candidates,
+//                     vector<Result> &results) {
   
-  std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
-  double current_dist_cutoff = max_proximity_radius;
-  for (unordered_set<string>::const_iterator i(candidates.begin());
-       i != candidates.end(); ++i) {
-    FeatureVector fv;
-    get_feature_vector(*i, fv_file_lookup, fv);
-    const double dist = query.compute_angle(fv);
-    ++comparisons;
-    if (dist < current_dist_cutoff) {
-      if (pq.size() == n_neighbors) {
-        pq.pop();
-        current_dist_cutoff = dist;
-      }
-      pq.push(Result(*i, dist));
-    }
-  }
+//   std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
+//   double current_dist_cutoff = max_proximity_radius;
+//   for (unordered_set<string>::const_iterator i(candidates.begin());
+//        i != candidates.end(); ++i) {
+//     FeatureVector fv;
+//     get_feature_vector(*i, fv_file_lookup, fv);
+//     const double dist = query.compute_angle(fv);
+//     if (dist < current_dist_cutoff) {
+//       if (pq.size() == n_neighbors) {
+//         pq.pop();
+//         current_dist_cutoff = dist;
+//       }
+//       pq.push(Result(*i, dist));
+//     }
+//   }
   
-  results.clear();
-  while (!pq.empty()) {
-    results.push_back(pq.top());
-    pq.pop();
-  }
-  reverse(results.begin(), results.end());
-}
+//   results.clear();
+//   while (!pq.empty()) {
+//     results.push_back(pq.top());
+//     pq.pop();
+//   }
+//   reverse(results.begin(), results.end());
+// }
 
 
 static void
@@ -139,7 +142,6 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
        i != candidates.end(); ++i) {
     const FeatureVector fv(fvs.find(*i)->second);
     const double dist = query.compute_angle(fv);
-    ++comparisons;
     if (dist < current_dist_cutoff) {
       if (pq.size() == n_neighbors) {
         pq.pop();
@@ -160,7 +162,7 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
 
 
 static void
-exec_query(const unordered_map<string, FeatureVector> &fvs,
+execute_query(const unordered_map<string, FeatureVector> &fvs,
            const unordered_map<string, LSHFun> &hfs,
            const unordered_map<string, LSHTab> &hts,
            const RegularNearestNeighborGraph &g,
@@ -228,20 +230,6 @@ read_config_file(const string &config_file,
   getline(in, hash_functions_file);
   getline(in, hash_tables_file);
   getline(in, graph_file);
-}
-
-
-
-static void
-get_feature_vector_paths_lookup(const string &fv_paths_file,
-                                unordered_map<string, string> &fv_paths_lookup) {
-  std::ifstream in(fv_paths_file.c_str());
-  if (!in)
-    throw SMITHLABException("bad feature vector paths file: " + fv_paths_file);
-
-  string fv_id, fv_path;
-  while (in >> fv_id >> fv_path)
-    fv_paths_lookup[fv_id] = fv_path;
 }
 
 
@@ -452,9 +440,7 @@ main(int argc, const char **argv) {
     // "n" query points requires a "n*t" results
     vector<vector<Result> > results(queries.size());
     for (size_t i = 0; i < queries.size(); ++i) {
-      // exec_query(fv_path_lookup, hf_lookup, ht_lookup, nng, queries[i],
-      //            n_neighbors, max_proximity_radius, results[i]);
-      exec_query(fv_lookup, hf_lookup, ht_lookup, nng, queries[i],
+      execute_query(fv_lookup, hf_lookup, ht_lookup, nng, queries[i],
                  n_neighbors, max_proximity_radius, results[i]);
       if (VERBOSE)
         cerr << '\r' << "processing queries: "
@@ -478,8 +464,6 @@ main(int argc, const char **argv) {
       out << endl;
     }
 
-    if (VERBOSE)
-      cerr << comparisons << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
