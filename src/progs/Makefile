@@ -18,7 +18,7 @@
 #
 
 PROGS = build_graph_naively naive_batch_query \
-	normalize_feature_vectors compute_normalizers \
+	normalize_feature_vector normalize_features compute_normalizers \
 	generate_hash_function populate_hash_table build_graph \
 	amordad_batch_query
 
@@ -33,6 +33,7 @@ CXX = g++
 CXXFLAGS = -Wall -fmessage-length=50
 OPTFLAGS = -O2
 DEBUGFLAGS = -g -pg
+LIBS = -lgsl -lgslcblas
 
 # Flags for Mavericks
 ifeq "$(shell uname)" "Darwin"
