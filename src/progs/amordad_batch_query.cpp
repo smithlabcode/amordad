@@ -53,6 +53,7 @@ using std::tr1::unordered_set;
 typedef LSHAngleHashTable LSHTab;
 typedef LSHAngleHashFunction LSHFun;
 
+size_t comparisons = 0;
 
 struct Result {
   Result(const string &i, const double v) : id(i), val(v) {}
@@ -102,7 +103,7 @@ operator<<(std::ostream &os, const Result &r) {
 //                     const double max_proximity_radius,
 //                     const unordered_set<string> &candidates,
 //                     vector<Result> &results) {
-  
+
 //   std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
 //   double current_dist_cutoff = max_proximity_radius;
 //   for (unordered_set<string>::const_iterator i(candidates.begin());
@@ -118,7 +119,7 @@ operator<<(std::ostream &os, const Result &r) {
 //       pq.push(Result(*i, dist));
 //     }
 //   }
-  
+
 //   results.clear();
 //   while (!pq.empty()) {
 //     results.push_back(pq.top());
@@ -135,13 +136,14 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
                     const double max_proximity_radius,
                     const unordered_set<string> &candidates,
                     vector<Result> &results) {
-  
+
   std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
   double current_dist_cutoff = max_proximity_radius;
   for (unordered_set<string>::const_iterator i(candidates.begin());
        i != candidates.end(); ++i) {
     const FeatureVector fv(fvs.find(*i)->second);
     const double dist = query.compute_angle(fv);
+    ++comparisons;
     if (dist < current_dist_cutoff) {
       if (pq.size() == n_neighbors) {
         pq.pop();
@@ -150,7 +152,7 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
       pq.push(Result(*i, dist));
     }
   }
-  
+
   results.clear();
   while (!pq.empty()) {
     results.push_back(pq.top());
@@ -163,32 +165,33 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
 
 static void
 execute_query(const unordered_map<string, FeatureVector> &fvs,
-           const unordered_map<string, LSHFun> &hfs,
-           const unordered_map<string, LSHTab> &hts,
-           const RegularNearestNeighborGraph &g,
-           const FeatureVector &query,
-           const size_t n_neighbors,
-           const double max_proximity_radius,
-           vector<Result> &results) {
-  
+              const unordered_map<string, LSHFun> &hfs,
+              const unordered_map<string, LSHTab> &hts,
+              const RegularNearestNeighborGraph &g,
+              const FeatureVector &query,
+              const size_t n_neighbors,
+              const double max_proximity_radius,
+              vector<Result> &results) {
+
   unordered_set<string> candidates;
-  
+
   // iterate over hash tables
-  for (unordered_map<string, LSHTab>::const_iterator i(hts.begin()); 
+  for (unordered_map<string, LSHTab>::const_iterator i(hts.begin());
        i != hts.end(); ++i) {
-    
+
     unordered_map<string, LSHFun>::const_iterator hf(hfs.find(i->first));
     assert(hf != hfs.end());
-    
+
     // hash the query
     const size_t bucket_number = hf->second(query);
+    ++comparisons;
     unordered_map<size_t, vector<string> >::const_iterator
       bucket = i->second.find(bucket_number);
-    
+
     if (bucket != i->second.end())
       candidates.insert(bucket->second.begin(), bucket->second.end());
   }
-  
+
   // gather neighbors of candidates
   unordered_set<string> candidates_from_graph;
   for (unordered_set<string>::const_iterator i(candidates.begin());
@@ -198,9 +201,9 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
     g.get_neighbors(*i, neighbors, neighbor_dists);
     candidates_from_graph.insert(neighbors.begin(), neighbors.end());
   }
-  
+
   candidates.insert(candidates_from_graph.begin(), candidates_from_graph.end());
-  
+
   // evaluate_candidates(fv_files_lookup, query, n_neighbors,
   //                     max_proximity_radius, candidates, results);
   evaluate_candidates(fvs, query, n_neighbors,
@@ -267,9 +270,9 @@ get_queries(const string &queries_file, vector<FeatureVector> &queries) {
 
 
 static void
-get_database(const string &db_file, 
+get_database(const bool VERBOSE, const string &db_file,
              unordered_map<string, FeatureVector> &db) {
-  
+
   vector<string> fv_files;
   get_filenames(db_file, fv_files);
   for (size_t i = 0; i < fv_files.size(); ++i)
@@ -282,7 +285,12 @@ get_database(const string &db_file,
       throw SMITHLABException("bad feature vector file: " + fv_files[i]);
     in >> fv;
     db[fv.get_id()] = fv;
+    if (VERBOSE)
+      cerr << "\rloading feature vectors: "
+           << percent(i, fv_files.size()) << "%\r";
   }
+  if (VERBOSE)
+    cerr << "\rloading feature vectors: 100%" << endl;
 }
 
 
@@ -345,7 +353,7 @@ main(int argc, const char **argv) {
 
     if (!validate_file(outfile, 'w'))
       throw SMITHLABException("bad output file: " + outfile);
-    
+
     ////////////////////////////////////////////////////////////////////////
     ////// READING HASH {FUNCTIONS, TABLES, FEATURE_VECTOR} FILES //////////////
     ////////////////////////////////////////////////////////////////////////
@@ -356,11 +364,11 @@ main(int argc, const char **argv) {
 
     // unordered_map<string, string> fv_path_lookup;
     // get_feature_vector_paths_lookup(fv_paths_file, fv_path_lookup);
-    
+
     // reading queries
     unordered_map<string, FeatureVector> fv_lookup;
-    get_database(fv_paths_file, fv_lookup);
-    
+    get_database(VERBOSE, fv_paths_file, fv_lookup);
+
     vector<string> hash_function_files, hash_table_files;
     get_filenames(hf_paths_file, hash_function_files);
     get_filenames(ht_paths_file, hash_table_files);
@@ -441,7 +449,7 @@ main(int argc, const char **argv) {
     vector<vector<Result> > results(queries.size());
     for (size_t i = 0; i < queries.size(); ++i) {
       execute_query(fv_lookup, hf_lookup, ht_lookup, nng, queries[i],
-                 n_neighbors, max_proximity_radius, results[i]);
+                    n_neighbors, max_proximity_radius, results[i]);
       if (VERBOSE)
         cerr << '\r' << "processing queries: "
              << percent(i, queries.size()) << "%\r";
@@ -449,7 +457,7 @@ main(int argc, const char **argv) {
     if (VERBOSE)
       cerr << '\r' << "processing queries: 100% ("
            << queries.size() << ")" << endl;
-    
+
     ////////////////////////////////////////////////////////////////////////
     ///// NOW WRITE THE OUTPUT /////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
@@ -464,6 +472,8 @@ main(int argc, const char **argv) {
       out << endl;
     }
 
+    if (VERBOSE)
+      cerr << comparisons << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;

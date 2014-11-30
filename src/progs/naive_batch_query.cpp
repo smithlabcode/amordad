@@ -44,8 +44,6 @@ using std::make_pair;
 
 size_t comparisons = 0;
 
-
-
 /******************************************************************************
  * Do the query process and returns the
  * index of the first hash table that identifies the query.
@@ -87,7 +85,7 @@ exec_query(const vector<FeatureVector> &database,
       pq.push(Result(i->get_id(), dist));
     }
   }
-  
+
   results.clear();
   while (!pq.empty()) {
     results.push_back(pq.top());
@@ -114,19 +112,25 @@ get_filenames(const string &path_file, vector<string> &file_names) {
  * See what is inside query_dir and loads all the queries
  */
 static void
-get_queries(const string &queries_file, vector<FeatureVector> &queries) {
+load_feature_vectors(const bool VERBOSE, const string &fvs_file,
+                     vector<FeatureVector> &fvs) {
 
-  vector<string> query_files;
-  get_filenames(queries_file, query_files);
+  vector<string> fv_files;
+  get_filenames(fvs_file, fv_files);
 
-  for(size_t i = 0; i < query_files.size(); ++i) {
+  for(size_t i = 0; i < fv_files.size(); ++i) {
     FeatureVector fv;
-    std::ifstream in(query_files[i].c_str());
+    std::ifstream in(fv_files[i].c_str());
     if (!in)
-      throw SMITHLABException("bad feature vector file: " + query_files[i]);
+      throw SMITHLABException("bad feature vector file: " + fv_files[i]);
     in >> fv;
-    queries.push_back(fv);
+    fvs.push_back(fv);
+    if (VERBOSE)
+      cerr << "\rloading feature vectors: "
+           << percent(i, fv_files.size()) << "%\r";
   }
+  if (VERBOSE)
+    cerr << "\rloading feature vectors: 100%" << endl;
 }
 
 
@@ -183,36 +187,40 @@ main(int argc, const char **argv) {
     const string queries_file(leftover_args[1]);
     const string outfile(leftover_args.back());
     /****************** END COMMAND LINE OPTIONS *****************/
-    
+
     if (!validate_file(queries_file, 'r'))
       throw SMITHLABException("bad queries file: " + queries_file);
 
     if (!validate_file(database_file, 'r'))
       throw SMITHLABException("bad database file: " + database_file);
-    
+
     if (!validate_file(outfile, 'w'))
       throw SMITHLABException("bad output file: " + outfile);
-    
+
     ////////////////////////////////////////////////////////////////////////
     ////// READING DATABASE ////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
     // reading database
     vector<FeatureVector> database;
-    get_queries(database_file, database);
+    if (VERBOSE)
+      cerr << "loading database" << endl;
+    load_feature_vectors(VERBOSE, database_file, database);
     if (VERBOSE)
       cerr << "database size: " << database.size() << endl;
-    
+
     ////////////////////////////////////////////////////////////////////////
     ///// STARTING THE QUERY PROCESS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    
+
     // reading queries
     vector<FeatureVector> queries;
-    get_queries(queries_file, queries);
+    if (VERBOSE)
+      cerr << "loading queries" << endl;
+    load_feature_vectors(VERBOSE, queries_file, queries);
     if (VERBOSE)
       cerr << "number of queries: " << queries.size() << endl;
-    
+
     // "n" query points requires a "n*t" results
     vector<vector<Result> > results(queries.size());
     for (size_t i = 0; i < queries.size(); ++i) {
@@ -225,7 +233,7 @@ main(int argc, const char **argv) {
     if (VERBOSE)
       cerr << '\r' << "processing queries: 100% ("
            << queries.size() << ")" << endl;
-    
+
     ////////////////////////////////////////////////////////////////////////
     ///// NOW WRITE THE OUTPUT /////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
