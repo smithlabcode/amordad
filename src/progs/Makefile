@@ -20,7 +20,8 @@
 PROGS = build_graph_naively naive_batch_query \
 	normalize_feature_vector normalize_features compute_normalizers \
 	generate_hash_function populate_hash_table build_graph \
-	amordad_batch_query
+	amordad_batch_query \
+	simulate_feature_vector
 
 SMITHLAB_CPP = ../smithlab_cpp
 COMMON = ../common
