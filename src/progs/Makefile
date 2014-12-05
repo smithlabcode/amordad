@@ -23,7 +23,10 @@ PROGS = build_graph_naively naive_batch_query \
 	amordad_batch_query \
 	simulate_feature_vector
 
-SMITHLAB_CPP = ../smithlab_cpp
+ifndef SMITHLAB_CPP
+	SMITHLAB_CPP = ../smithlab_cpp
+endif
+
 COMMON = ../common
 
 INCLUDEDIRS = $(SMITHLAB_CPP) $(COMMON)
