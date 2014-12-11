@@ -52,7 +52,7 @@ size_t comparisons = 0;
 struct Result {
   Result(const string &i, const double v) : id(i), val(v) {}
   Result() : val(std::numeric_limits<double>::max()) {}
-  bool operator>(const Result &other) const {return val > other.val;}
+  bool operator<(const Result &other) const {return val < other.val;}
   string id;
   double val;
 };
@@ -71,18 +71,19 @@ exec_query(const vector<FeatureVector> &database,
            const double max_proximity_radius,
            vector<Result> &results) {
 
-  std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
+  std::priority_queue<Result, vector<Result>, std::less<Result> > pq;
   double current_dist_cutoff = max_proximity_radius;
   for (vector<FeatureVector>::const_iterator i(database.begin());
        i != database.end(); ++i) {
     const double dist = query.compute_angle(*i);
     ++comparisons;
     if (dist < current_dist_cutoff) {
-      if (pq.size() == n_neighbors) {
+      if (pq.size() == n_neighbors)
         pq.pop();
-        current_dist_cutoff = dist;
-      }
       pq.push(Result(i->get_id(), dist));
+
+      if(pq.size() == n_neighbors)
+        current_dist_cutoff = pq.top().val;
     }
   }
 
