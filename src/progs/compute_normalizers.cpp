@@ -51,7 +51,7 @@ remove_upper_tail(const size_t tail_size, vector<double> &vals) {
 static void
 remove_lower_tail(const size_t tail_size, vector<double> &vals) {
   assert(tail_size < vals.size());
-  vals.erase(copy(vals.begin() + tail_size, vals.end(), vals.begin()));
+  vals.erase(copy(vals.begin() + tail_size, vals.end(), vals.begin()), vals.end());
 }
 
 
