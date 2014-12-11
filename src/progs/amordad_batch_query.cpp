@@ -58,7 +58,7 @@ size_t comparisons = 0;
 struct Result {
   Result(const string &i, const double v) : id(i), val(v) {}
   Result() : val(std::numeric_limits<double>::max()) {}
-  bool operator>(const Result &other) const {return val > other.val;}
+  bool operator<(const Result &other) const {return val < other.val;}
   string id;
   double val;
 };
@@ -137,7 +137,7 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
                     const unordered_set<string> &candidates,
                     vector<Result> &results) {
 
-  std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
+  std::priority_queue<Result, vector<Result>, std::less<Result> > pq;
   double current_dist_cutoff = max_proximity_radius;
   for (unordered_set<string>::const_iterator i(candidates.begin());
        i != candidates.end(); ++i) {
@@ -145,11 +145,12 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
     const double dist = query.compute_angle(fv);
     ++comparisons;
     if (dist < current_dist_cutoff) {
-      if (pq.size() == n_neighbors) {
+      if (pq.size() == n_neighbors) 
         pq.pop();
-        current_dist_cutoff = dist;
-      }
       pq.push(Result(*i, dist));
+
+      if(pq.size() == n_neighbors)
+        current_dist_cutoff = pq.top().val;
     }
   }
 
