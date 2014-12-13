@@ -73,7 +73,7 @@ build_graph : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 build_graph_naively : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o)
 
 amordad_batch_query : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
-	LSHAngleHashTable.o LSHAngleHashFunction.o)
+	LSHAngleHashTable.o LSHAngleHashFunction.o GraphTableContainer.o)
 
 $(PROGS): $(addprefix $(SMITHLAB_CPP)/, smithlab_os.o \
 	smithlab_utils.o OptionParser.o) \

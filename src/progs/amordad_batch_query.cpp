@@ -33,11 +33,12 @@
 #include "smithlab_utils.hpp"
 #include "smithlab_os.hpp"
 
+#include "FeatureVector.hpp"
+#include "LSHAngleHashFunction.hpp"
+#include "LSHAngleHashTable.hpp"
 #include "RegularNearestNeighborGraph.hpp"
 
-#include "FeatureVector.hpp"
-#include "LSHAngleHashTable.hpp"
-#include "LSHAngleHashFunction.hpp"
+#include "GraphTableContainer.hpp"
 
 using std::string;
 using std::vector;
@@ -55,115 +56,6 @@ typedef LSHAngleHashFunction LSHFun;
 
 size_t comparisons = 0;
 
-struct Result {
-  Result(const string &i, const double v) : id(i), val(v) {}
-  Result() : val(std::numeric_limits<double>::max()) {}
-  bool operator<(const Result &other) const {return val < other.val;}
-  string id;
-  double val;
-};
-
-
-std::ostream &
-operator<<(std::ostream &os, const Result &r) {
-  return os << r.id << '\t' << r.val;
-}
-
-
-// static void
-// get_feature_vector(const string &id,
-//                    const unordered_map<string, string> &fv_path_lookup,
-//                    FeatureVector &fv) {
-//   unordered_map<string, string>::const_iterator i(fv_path_lookup.find(id));
-//   if (i == fv_path_lookup.end())
-//     throw SMITHLABException("cannot find file for: " + id);
-
-//   std::ifstream in(i->second.c_str());
-//   if (!in)
-//     throw SMITHLABException("bad feature vector file: " + i->second);
-//   in >> fv;
-// }
-
-// static void
-// get_feature_vector_paths_lookup(const string &fv_paths_file,
-//                                 unordered_map<string, string> &fv_paths_lookup) {
-//   std::ifstream in(fv_paths_file.c_str());
-//   if (!in)
-//     throw SMITHLABException("bad feature vector paths file: " + fv_paths_file);
-
-//   string fv_id, fv_path;
-//   while (in >> fv_id >> fv_path)
-//     fv_paths_lookup[fv_id] = fv_path;
-// }
-
-// static void
-// evaluate_candidates(const unordered_map<string, string>& fv_file_lookup,
-//                     const FeatureVector &query,
-//                     const size_t n_neighbors,
-//                     const double max_proximity_radius,
-//                     const unordered_set<string> &candidates,
-//                     vector<Result> &results) {
-
-//   std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
-//   double current_dist_cutoff = max_proximity_radius;
-//   for (unordered_set<string>::const_iterator i(candidates.begin());
-//        i != candidates.end(); ++i) {
-//     FeatureVector fv;
-//     get_feature_vector(*i, fv_file_lookup, fv);
-//     const double dist = query.compute_angle(fv);
-//     if (dist < current_dist_cutoff) {
-//       if (pq.size() == n_neighbors) {
-//         pq.pop();
-//         current_dist_cutoff = dist;
-//       }
-//       pq.push(Result(*i, dist));
-//     }
-//   }
-
-//   results.clear();
-//   while (!pq.empty()) {
-//     results.push_back(pq.top());
-//     pq.pop();
-//   }
-//   reverse(results.begin(), results.end());
-// }
-
-
-static void
-evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
-                    const FeatureVector &query,
-                    const size_t n_neighbors,
-                    const double max_proximity_radius,
-                    const unordered_set<string> &candidates,
-                    vector<Result> &results) {
-
-  std::priority_queue<Result, vector<Result>, std::less<Result> > pq;
-  double current_dist_cutoff = max_proximity_radius;
-  for (unordered_set<string>::const_iterator i(candidates.begin());
-       i != candidates.end(); ++i) {
-    const FeatureVector fv(fvs.find(*i)->second);
-    const double dist = query.compute_angle(fv);
-    ++comparisons;
-    if (dist < current_dist_cutoff) {
-      if (pq.size() == n_neighbors) 
-        pq.pop();
-      pq.push(Result(*i, dist));
-
-      if(pq.size() == n_neighbors)
-        current_dist_cutoff = pq.top().val;
-    }
-  }
-
-  results.clear();
-  while (!pq.empty()) {
-    results.push_back(pq.top());
-    pq.pop();
-  }
-  reverse(results.begin(), results.end());
-}
-
-
-
 static void
 execute_query(const unordered_map<string, FeatureVector> &fvs,
               const unordered_map<string, LSHFun> &hfs,
@@ -174,43 +66,10 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
               const double max_proximity_radius,
               vector<Result> &results) {
 
-  unordered_set<string> candidates;
-
-  // iterate over hash tables
-  for (unordered_map<string, LSHTab>::const_iterator i(hts.begin());
-       i != hts.end(); ++i) {
-
-    unordered_map<string, LSHFun>::const_iterator hf(hfs.find(i->first));
-    assert(hf != hfs.end());
-
-    // hash the query
-    const size_t bucket_number = hf->second(query);
-    ++comparisons;
-    unordered_map<size_t, vector<string> >::const_iterator
-      bucket = i->second.find(bucket_number);
-
-    if (bucket != i->second.end())
-      candidates.insert(bucket->second.begin(), bucket->second.end());
-  }
-
-  // gather neighbors of candidates
-  unordered_set<string> candidates_from_graph;
-  for (unordered_set<string>::const_iterator i(candidates.begin());
-       i != candidates.end(); ++i) {
-    vector<string> neighbors;
-    vector<double> neighbor_dists;
-    g.get_neighbors(*i, neighbors, neighbor_dists);
-    candidates_from_graph.insert(neighbors.begin(), neighbors.end());
-  }
-
-  candidates.insert(candidates_from_graph.begin(), candidates_from_graph.end());
-
-  // evaluate_candidates(fv_files_lookup, query, n_neighbors,
-  //                     max_proximity_radius, candidates, results);
-  evaluate_candidates(fvs, query, n_neighbors,
-                      max_proximity_radius, candidates, results);
+  GraphTableContainer gtc(fvs, hfs, hts, g);
+  gtc.find_nearest_neighbors(query, n_neighbors, 
+                             max_proximity_radius, results);
 }
-
 
 /*
  * Config file has this structure:
