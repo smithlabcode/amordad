@@ -1,0 +1,41 @@
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+
+src/progs/amordad_batch_query
+src/progs/build_graph
+src/progs/build_graph_naively
+src/progs/compute_normalizers
+src/progs/generate_hash_function
+src/progs/naive_batch_query
+src/progs/normalize_feature_vector
+src/progs/normalize_features
+src/progs/populate_hash_table
+src/progs/simulate_feature_vector
