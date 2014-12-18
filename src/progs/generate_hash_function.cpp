@@ -23,6 +23,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <unistd.h>
 
 #include "OptionParser.hpp"
 #include "smithlab_os.hpp"
@@ -49,19 +50,19 @@ main(int argc, const char **argv) {
     string id;
     string feature_set_id;
     string outfile;
-    
+
     /****************** COMMAND LINE OPTIONS ********************/
-    OptionParser opt_parse(strip_path(argv[0]), 
+    OptionParser opt_parse(strip_path(argv[0]),
                            "generate lsh-angle hash function", "");
     opt_parse.add_opt("id", 'i', "id of hash function", true, id);
     opt_parse.add_opt("fs", 'f', "feature set id", true, feature_set_id);
     opt_parse.add_opt("nfeat", 'n', "number of features", true, n_features);
     opt_parse.add_opt("bits", 'b', "bits in hash value", true, n_bits);
     opt_parse.add_opt("out", 'o', "output file (default: stdout)", false, outfile);
-    opt_parse.add_opt("key", 'k', "random generator key (for debugging)", 
+    opt_parse.add_opt("key", 'k', "random generator key (for debugging)",
                       false, rng_key);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
-    
+
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
     if (argc == 1 || opt_parse.help_requested()) {
@@ -82,16 +83,16 @@ main(int argc, const char **argv) {
       return EXIT_SUCCESS;
     }
     /****************** END COMMAND LINE OPTIONS *****************/
-    
+
     srand((rng_key != 0) ? rng_key : time(0) + getpid());
-    
-    const LSHAngleHashFunction hash_function(id, feature_set_id, 
+
+    const LSHAngleHashFunction hash_function(id, feature_set_id,
                                              n_features, n_bits);
     std::ofstream of;
     if (!outfile.empty()) of.open(outfile.c_str());
     if (!of) throw SMITHLABException("cannot write to file: " + outfile);
     std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
-    
+
     out << hash_function << endl;
   }
   catch (const SMITHLABException &e) {
