@@ -21,6 +21,7 @@ PROGS = build_graph_naively naive_batch_query \
 	normalize_feature_vector normalize_features compute_normalizers \
 	generate_hash_function populate_hash_table build_graph \
 	amordad_batch_query \
+	amordad_batch_insert \
 	simulate_feature_vector
 
 ifndef SMITHLAB_CPP
@@ -74,6 +75,10 @@ build_graph_naively : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o)
 
 amordad_batch_query : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o)
+
+amordad_batch_insert : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
+	LSHAngleHashTable.o LSHAngleHashFunction.o)
+
 
 $(PROGS): $(addprefix $(SMITHLAB_CPP)/, smithlab_os.o \
 	smithlab_utils.o OptionParser.o) \

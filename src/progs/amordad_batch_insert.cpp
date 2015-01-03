@@ -53,6 +53,7 @@ using std::tr1::unordered_set;
 typedef LSHAngleHashTable LSHTab;
 typedef LSHAngleHashFunction LSHFun;
 
+size_t comparisons = 0;
 
 struct Result {
   Result(const string &i, const double v) : id(i), val(v) {}
@@ -103,18 +104,26 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
 
 
 
-static void
-execute_insertion(const unordered_map<string, FeatureVector> &fvs,
+static bool
+execute_insertion(unordered_map<string, FeatureVector> &fvs,
                   const unordered_map<string, LSHFun> &hfs,
                   const FeatureVector &query,
                   const size_t n_neighbors,
                   unordered_map<string, LSHTab> &hts,
                   RegularNearestNeighborGraph &g) {
   
+  /// TEST WHETHER QUERY IS ALREADY IN GRAPH
+  /// IF NOT ADD QUERY AS A NEW VERTEX
+  if (!g.add_vertex_if_new(query.get_id()))
+    return false;
+
+  /// INSERT QUERY INTO THE FEATURE VECTOR MAP
+  fvs[query.get_id()] = query;
+
   unordered_set<string> candidates;
   
   // iterate over hash tables
-  for (unordered_map<string, LSHTab>::const_iterator i(hts.begin());
+  for (unordered_map<string, LSHTab>::iterator i(hts.begin());
        i != hts.end(); ++i) {
 
     unordered_map<string, LSHFun>::const_iterator hf(hfs.find(i->first));
@@ -130,7 +139,7 @@ execute_insertion(const unordered_map<string, FeatureVector> &fvs,
       candidates.insert(bucket->second.begin(), bucket->second.end());
     
     /// TODO: MUST INSERT THE QUERY INTO EACH HASH TABLE
-
+    i->second.insert(query, bucket_number);
   }
 
   // gather neighbors of candidates
@@ -150,6 +159,13 @@ execute_insertion(const unordered_map<string, FeatureVector> &fvs,
   
   /// TODO: MUST CONNECT THE QUERY TO EACH OF THE "RESULT" NEIGHBORS
   /// IN THE GRAPH
+  for (vector<Result>::const_iterator i(neighbors.begin());
+      i != neighbors.end(); ++i) {
+    g.update_vertex(i->id, query.get_id(), i->val);
+    g.update_vertex(query.get_id(), i->id, i->val);
+  }
+
+  return true;
 }
 
 
@@ -377,8 +393,8 @@ main(int argc, const char **argv) {
       cerr << "number of insertions: " << insertions.size() << endl;
 
     for (size_t i = 0; i < insertions.size(); ++i) {
-      execute_insertion(fv_lookup, hf_lookup, ht_lookup, nng, insertions[i],
-                        n_neighbors);
+      execute_insertion(fv_lookup, hf_lookup, insertions[i], n_neighbors,
+                        ht_lookup, nng);
       if (VERBOSE)
         cerr << '\r' << "processing insertions: "
              << percent(i, insertions.size()) << "%\r";
