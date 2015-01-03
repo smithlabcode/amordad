@@ -266,16 +266,10 @@ main(int argc, const char **argv) {
 
     bool VERBOSE = false;
 
-    /// TODO: THIS IS THE DEGREE OF THE GRAPH AND SHOULD BE OBTAINED
-    /// FROM THE DATABASE ITSELF, AS IT IS ENCODED IN THE GRAPH FILE
-    size_t n_neighbors = 1;
-
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "batch insertion an amordad "
                            "database residing on disk",
                            "<config-file> <insertion-dir> <outfile>");
-    opt_parse.add_opt("neighbors", 'n', "number of nearest neighbors to connect",
-                      false, n_neighbors);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
@@ -330,6 +324,10 @@ main(int argc, const char **argv) {
 
     RegularNearestNeighborGraph nng;
     g_in >> nng;
+
+    /// TODO: THIS IS THE DEGREE OF THE GRAPH AND SHOULD BE OBTAINED
+    /// FROM THE DATABASE ITSELF, AS IT IS ENCODED IN THE GRAPH FILE
+    size_t n_neighbors = nng.get_maximum_degree();
 
     if (VERBOSE)
       cerr << "GRAPH: "
