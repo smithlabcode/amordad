@@ -39,3 +39,4 @@ src/progs/normalize_feature_vector
 src/progs/normalize_features
 src/progs/populate_hash_table
 src/progs/simulate_feature_vector
+src/progs/query_server
