@@ -108,8 +108,6 @@ load_feature_vectors(const bool VERBOSE, const string &fvs_file,
 
   for(size_t i = 0; i < fv_files.size(); ++i) {
     FeatureVector fv;
-    if (!FileExists(fv_files[i]))
-        throw SMITHLABException("File not found: " + fv_files[i]);
     std::ifstream in(fv_files[i].c_str());
     if (!in)
       throw SMITHLABException("bad feature vector file: " + fv_files[i]);
