@@ -158,6 +158,7 @@ main(int argc, const char **argv) {
     ////// READING THE GRAPH ///////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
+    cout << "GRAOH file" << graph_file << "\n";
     std::ifstream g_in(graph_file.c_str());
     if (!g_in)
       throw SMITHLABException("cannot load graph: " + graph_file);

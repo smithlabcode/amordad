@@ -4,6 +4,8 @@
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/filesystem.hpp>
 
+using namespace std;
+
 namespace crow
 {
     // code from http://stackoverflow.com/questions/2838524/use-boost-date-time-to-parse-and-create-http-dates
@@ -145,19 +147,19 @@ namespace crow
                 constexpr const_str( const char(&arr)[N] ) : begin_(arr), size_(N - 1) {
                     static_assert( N >= 1, "not a string literal");
                 }
-            constexpr char operator[]( unsigned i ) const { 
-                return requires_in_range(i, size_), begin_[i]; 
+            constexpr char operator[]( unsigned i ) const {
+                return requires_in_range(i, size_), begin_[i];
             }
 
-            constexpr operator const char *() const { 
-                return begin_; 
+            constexpr operator const char *() const {
+                return begin_;
             }
 
             constexpr const char* begin() const { return begin_; }
             constexpr const char* end() const { return begin_ + size_; }
 
-            constexpr unsigned size() const { 
-                return size_; 
+            constexpr unsigned size() const {
+                return size_;
             }
         };
 
@@ -169,7 +171,7 @@ namespace crow
 
         constexpr bool is_valid(const_str s, unsigned i = 0, int f = 0)
         {
-            return 
+            return
                 i == s.size()
                     ? f == 0 :
                 f < 0 || f >= 2
@@ -184,7 +186,7 @@ namespace crow
         constexpr bool is_equ_p(const char* a, const char* b, unsigned n)
         {
             return
-                *a == 0 && *b == 0 && n == 0 
+                *a == 0 && *b == 0 && n == 0
                     ? true :
                 (*a == 0 || *b == 0)
                     ? false :
@@ -197,13 +199,13 @@ namespace crow
 
         constexpr bool is_equ_n(const_str a, unsigned ai, const_str b, unsigned bi, unsigned n)
         {
-            return 
-                ai + n > a.size() || bi + n > b.size() 
+            return
+                ai + n > a.size() || bi + n > b.size()
                     ? false :
-                n == 0 
-                    ? true : 
-                a[ai] != b[bi] 
-                    ? false : 
+                n == 0
+                    ? true :
+                a[ai] != b[bi]
+                    ? false :
                 is_equ_n(a,ai+1,b,bi+1,n-1);
         }
 
@@ -237,9 +239,9 @@ namespace crow
         constexpr uint64_t get_parameter_tag(const_str s, unsigned p = 0)
         {
             return
-                p == s.size() 
+                p == s.size()
                     ?  0 :
-                s[p] == '<' ? ( 
+                s[p] == '<' ? (
                     is_int(s, p)
                         ? get_parameter_tag(s, find_closing_tag(s, p)) * 6 + 1 :
                     is_uint(s, p)
@@ -251,7 +253,7 @@ namespace crow
                     is_path(s, p)
                         ? get_parameter_tag(s, find_closing_tag(s, p)) * 6 + 5 :
                     throw std::runtime_error("invalid parameter type")
-                    ) : 
+                    ) :
                 get_parameter_tag(s, p+1);
         }
 
@@ -270,7 +272,7 @@ template <typename F, typename Set>
         template <typename F, typename ...Args>
         struct CallHelper<F, S<Args...>>
         {
-            template <typename F1, typename ...Args1, typename = 
+            template <typename F1, typename ...Args1, typename =
                 decltype(std::declval<F1>()(std::declval<Args1>()...))
                 >
             static char __test(int);
@@ -318,15 +320,15 @@ template <typename F, typename Set>
         };
 
 
-        template <uint64_t Tag> 
+        template <uint64_t Tag>
         struct arguments
         {
             using subarguments = typename arguments<Tag/6>::type;
-            using type = 
+            using type =
                 typename subarguments::template push<typename single_tag_to_type<Tag%6>::type>;
         };
 
-        template <> 
+        template <>
         struct arguments<0>
         {
             using type = S<>;
@@ -368,7 +370,7 @@ template <typename F, typename Set>
         template<> struct gen_seq<0> : seq<>{};
         template<> struct gen_seq<1> : seq<0>{};
 
-        template <typename Seq, typename Tuple> 
+        template <typename Seq, typename Tuple>
         struct pop_back_helper;
 
         template <unsigned ... N, typename Tuple>
@@ -765,7 +767,7 @@ inline char * qs_k2v(const char * key, char * const * qs_kv, int qs_kv_size, int
             // return (zero-char value) ? ptr to trailing '\0' : ptr to value
             if(nth == 0)
                 return qs_kv[i] + skip;
-            else 
+            else
                 --nth;
         }
     }
@@ -813,7 +815,7 @@ inline char * qs_scanvalue(const char * key, const char * qs, char * val, size_t
 // ----------------------------------------------------------------------------
 
 
-namespace crow 
+namespace crow
 {
     class query_string
     {
@@ -870,7 +872,7 @@ namespace crow
             key_value_pairs_.resize(count);
         }
 
-        void clear() 
+        void clear()
         {
             key_value_pairs_.clear();
             url_.clear();
@@ -898,7 +900,7 @@ namespace crow
         std::vector<char*> get_list (const std::string& name) const
         {
             std::vector<char*> ret;
-            std::string plus = name + "[]";            
+            std::string plus = name + "[]";
             char* element = nullptr;
 
             int count = 0;
@@ -1091,10 +1093,10 @@ namespace crow
         class rvalue;
         rvalue load(const char* data, size_t size);
 
-        namespace detail 
+        namespace detail
         {
 
-            struct r_string 
+            struct r_string
                 : boost::less_than_comparable<r_string>,
                 boost::less_than_comparable<r_string, std::string>,
                 boost::equality_comparable<r_string>,
@@ -1197,7 +1199,7 @@ namespace crow
             static const int cached_bit = 2;
             static const int error_bit = 4;
         public:
-            rvalue() noexcept : option_{error_bit} 
+            rvalue() noexcept : option_{error_bit}
             {}
             rvalue(type t) noexcept
                 : lsize_{}, lremain_{}, t_{t}
@@ -1329,10 +1331,10 @@ namespace crow
                                                 return c - 'A' + 10;
                                             return c - '0';
                                         };
-                                        unsigned int code = 
-                                            (from_hex(head[1])<<12) + 
-                                            (from_hex(head[2])<< 8) + 
-                                            (from_hex(head[3])<< 4) + 
+                                        unsigned int code =
+                                            (from_hex(head[1])<<12) +
+                                            (from_hex(head[2])<< 8) +
+                                            (from_hex(head[3])<< 4) +
                                             from_hex(head[4]);
                                         if (code >= 0x800)
                                         {
@@ -1381,7 +1383,7 @@ namespace crow
 
             bool has(const std::string& str) const
             {
-                struct Pred 
+                struct Pred
                 {
                     bool operator()(const rvalue& l, const rvalue& r) const
                     {
@@ -1410,21 +1412,21 @@ namespace crow
                 return has(str) ? 1 : 0;
             }
 
-            rvalue* begin() const 
-            { 
+            rvalue* begin() const
+            {
 #ifndef CROW_JSON_NO_ERROR_CHECK
                 if (t() != type::Object && t() != type::List)
                     throw std::runtime_error("value is not a container");
 #endif
-                return l_.get(); 
+                return l_.get();
             }
-            rvalue* end() const 
-            { 
+            rvalue* end() const
+            {
 #ifndef CROW_JSON_NO_ERROR_CHECK
                 if (t() != type::Object && t() != type::List)
                     throw std::runtime_error("value is not a container");
 #endif
-                return l_.get()+lsize_; 
+                return l_.get()+lsize_;
             }
 
             const detail::r_string& key() const
@@ -1476,7 +1478,7 @@ namespace crow
                 if (t() != type::Object)
                     throw std::runtime_error("value is not an object");
 #endif
-                struct Pred 
+                struct Pred
                 {
                     bool operator()(const rvalue& l, const rvalue& r) const
                     {
@@ -1576,9 +1578,9 @@ namespace crow
                 case type::True: os << "true"; break;
                 case type::Number: os << r.d(); break;
                 case type::String: os << '"' << r.s() << '"'; break;
-                case type::List: 
+                case type::List:
                     {
-                        os << '['; 
+                        os << '[';
                         bool first = true;
                         for(auto& x : r)
                         {
@@ -1587,12 +1589,12 @@ namespace crow
                             first = false;
                             os << x;
                         }
-                        os << ']'; 
+                        os << ']';
                     }
                     break;
                 case type::Object:
                     {
-                        os << '{'; 
+                        os << '{';
                         bool first = true;
                         for(auto& x : r)
                         {
@@ -1602,7 +1604,7 @@ namespace crow
                             first = false;
                             os << x;
                         }
-                        os << '}'; 
+                        os << '}';
                     }
                     break;
                 }
@@ -1705,14 +1707,14 @@ namespace crow
                                     {
                                         auto check = [](char c)
                                         {
-                                            return 
+                                            return
                                                 ('0' <= c && c <= '9') ||
                                                 ('a' <= c && c <= 'f') ||
                                                 ('A' <= c && c <= 'F');
                                         };
-                                        if (!(check(*(data+1)) && 
-                                            check(*(data+2)) && 
-                                            check(*(data+3)) && 
+                                        if (!(check(*(data+1)) &&
+                                            check(*(data+2)) &&
+                                            check(*(data+3)) &&
                                             check(*(data+4))))
                                             return {};
                                     }
@@ -1803,8 +1805,8 @@ namespace crow
                                 {
                                     state = NumberParsingState::ZeroFirst;
                                 }
-                                else if (state == NumberParsingState::Digits || 
-                                    state == NumberParsingState::DigitsAfterE || 
+                                else if (state == NumberParsingState::Digits ||
+                                    state == NumberParsingState::DigitsAfterE ||
                                     state == NumberParsingState::DigitsAfterPoints)
                                 {
                                     // ok; pass
@@ -1816,8 +1818,8 @@ namespace crow
                                 else
                                     return {};*/
                                 break;
-                            case '1': case '2': case '3': 
-                            case '4': case '5': case '6': 
+                            case '1': case '2': case '3':
+                            case '4': case '5': case '6':
                             case '7': case '8': case '9':
                                 state = (NumberParsingState)"\3\3\7\3\4\6\6"[state];
                                 while(*(data+1) >= '0' && *(data+1) <= '9') data++;
@@ -1825,8 +1827,8 @@ namespace crow
                                 {
                                     state = NumberParsingState::Digits;
                                 }
-                                else if (state == NumberParsingState::Digits || 
-                                    state == NumberParsingState::DigitsAfterE || 
+                                else if (state == NumberParsingState::Digits ||
+                                    state == NumberParsingState::DigitsAfterE ||
                                     state == NumberParsingState::DigitsAfterPoints)
                                 {
                                     // ok; pass
@@ -1873,18 +1875,18 @@ namespace crow
                                 break;
                             case 'e': case 'E':
                                 state = (NumberParsingState)"\7\7\7\5\5\7\7"[state];
-                                /*if (state == NumberParsingState::Digits || 
+                                /*if (state == NumberParsingState::Digits ||
                                     state == NumberParsingState::DigitsAfterPoints)
                                 {
                                     state = NumberParsingState::E;
                                 }
-                                else 
+                                else
                                     return {};*/
                                 break;
                             default:
-                                if (crow_json_likely(state == NumberParsingState::ZeroFirst || 
-                                        state == NumberParsingState::Digits || 
-                                        state == NumberParsingState::DigitsAfterPoints || 
+                                if (crow_json_likely(state == NumberParsingState::ZeroFirst ||
+                                        state == NumberParsingState::Digits ||
+                                        state == NumberParsingState::DigitsAfterPoints ||
                                         state == NumberParsingState::DigitsAfterE))
                                     return {type::Number, start, data};
                                 else
@@ -1940,8 +1942,8 @@ namespace crow
                             }
                             else
                                 return {};
-                        //case '1': case '2': case '3': 
-                        //case '4': case '5': case '6': 
+                        //case '1': case '2': case '3':
+                        //case '4': case '5': case '6':
                         //case '7': case '8': case '9':
                         //case '0': case '-':
                         default:
@@ -2291,7 +2293,7 @@ namespace crow
                     case type::True: return 4;
                     case type::Number: return 30;
                     case type::String: return 2+s.size()+s.size()/2;
-                    case type::List: 
+                    case type::List:
                         {
                             size_t sum{};
                             if (l)
@@ -2340,7 +2342,7 @@ namespace crow
                 case type::Null: out += "null"; break;
                 case type::False: out += "false"; break;
                 case type::True: out += "true"; break;
-                case type::Number: 
+                case type::Number:
                     {
                         char outbuf[128];
                         sprintf(outbuf, "%g", v.d);
@@ -2348,7 +2350,7 @@ namespace crow
                     }
                     break;
                 case type::String: dump_string(v.s, out); break;
-                case type::List: 
+                case type::List:
                      {
                          out.push_back('[');
                          if (v.l)
@@ -2457,12 +2459,12 @@ namespace crow
             int end;
             int pos;
             ActionType t;
-            Action(ActionType t, int start, int end, int pos = 0) 
+            Action(ActionType t, int start, int end, int pos = 0)
                 : start(start), end(end), pos(pos), t(t)
             {}
         };
 
-        class template_t 
+        class template_t
         {
         public:
             template_t(std::string body)
@@ -2723,7 +2725,7 @@ namespace crow
                 std::string tag_close = "}}";
 
                 std::vector<int> blockPositions;
-                
+
                 size_t current = 0;
                 while(1)
                 {
@@ -2763,11 +2765,11 @@ namespace crow
                             while(body_[endIdx-1] == ' ') endIdx--;
                             {
                                 auto& matched = actions_[blockPositions.back()];
-                                if (body_.compare(idx, endIdx-idx, 
+                                if (body_.compare(idx, endIdx-idx,
                                         body_, matched.start, matched.end - matched.start) != 0)
                                 {
-                                    throw invalid_template_exception("not matched {{# {{/ pair: " + 
-                                        body_.substr(matched.start, matched.end - matched.start) + ", " + 
+                                    throw invalid_template_exception("not matched {{# {{/ pair: " +
+                                        body_.substr(matched.start, matched.end - matched.start) + ", " +
                                         body_.substr(idx, endIdx-idx));
                                 }
                                 matched.pos = actions_.size();
@@ -2889,12 +2891,12 @@ namespace crow
                     }
                     if (all_space_after && !is_last_action)
                         continue;
-                    if (!all_space_after && 
+                    if (!all_space_after &&
                             !(
-                                body_[k] == '\n' 
-                            || 
-                                (body_[k] == '\r' && 
-                                k + 1 < (int)body_.size() && 
+                                body_[k] == '\n'
+                            ||
+                                (body_[k] == '\r' &&
+                                k + 1 < (int)body_.size() &&
                                 body_[k+1] == '\n')))
                         continue;
                     if (actions_[i].t == ActionType::Partial)
@@ -2906,13 +2908,13 @@ namespace crow
                     {
                         if (body_[k] == '\n')
                             k++;
-                        else 
+                        else
                             k += 2;
                         fragment_after.first = k;
                     }
                 }
             }
-            
+
             std::vector<std::pair<int,int>> fragments_;
             std::vector<Action> actions_;
             std::string body_;
@@ -2952,7 +2954,7 @@ namespace crow
         {
             auto& base = detail::get_template_base_directory_ref();
             base = path;
-            if (base.back() != '\\' && 
+            if (base.back() != '\\' &&
                 base.back() != '/')
             {
                 base += '/';
@@ -3020,7 +3022,7 @@ namespace crow
         response(std::string body) : body(std::move(body)) {}
         response(json::wvalue&& json_value) : json_value(std::move(json_value)) {}
         response(int code, std::string body) : body(std::move(body)), code(code) {}
-        response(const json::wvalue& json_value) : body(json::dump(json_value)) 
+        response(const json::wvalue& json_value) : body(json::dump(json_value))
         {
             set_header("Content-Type", "application/json");
         }
@@ -3066,7 +3068,7 @@ namespace crow
             if (!completed_)
             {
                 completed_ = true;
-                
+
                 if (complete_request_handler_)
                 {
                     complete_request_handler_();
@@ -3110,7 +3112,7 @@ namespace crow
 
     // before_handle
     //      called before handling the request.
-    //      if res.end() is called, the operation is halted. 
+    //      if res.end() is called, the operation is halted.
     //      (still call after_handle of this middleware)
     //      2 signatures:
     //      void before_handle(request& req, response& res, context& ctx)
@@ -3261,7 +3263,7 @@ namespace crow
     C::handle
         context.aaa
 
-    App::context : private CookieParser::contetx, ... 
+    App::context : private CookieParser::contetx, ...
     {
         jar
 
@@ -3419,7 +3421,7 @@ enum flags
 
 
 /* Map for errno-related constants
- * 
+ *
  * The provided argument should be a macro that takes 2 arguments.
  */
 #define HTTP_ERRNO_MAP(XX)                                           \
@@ -3698,7 +3700,7 @@ do {                                                                 \
     FOR##_mark = NULL;                                               \
   }                                                                  \
 } while (0)
-  
+
 /* Run the data callback FOR and consume the current byte */
 #define CALLBACK_DATA(FOR)                                           \
     CALLBACK_DATA_(FOR, p - FOR##_mark, p - data + 1)
@@ -6226,7 +6228,7 @@ namespace crow
 
 namespace crow
 {
-    namespace detail 
+    namespace detail
     {
         // fast timer queue for fixed tick value.
         class dumb_timer_queue
@@ -6333,7 +6335,7 @@ namespace crow
         virtual ~BaseRule()
         {
         }
-        
+
         virtual void validate() = 0;
 
         virtual void handle(const request&, response&, const routing_params&) = 0;
@@ -6362,12 +6364,12 @@ namespace crow
             response& res;
         };
 
-        template <typename F, int NInt, int NUint, int NDouble, int NString, typename S1, typename S2> 
+        template <typename F, int NInt, int NUint, int NDouble, int NString, typename S1, typename S2>
         struct call
         {
         };
 
-        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1, typename ... Args2> 
+        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1, typename ... Args2>
         struct call<F, NInt, NUint, NDouble, NString, black_magic::S<int64_t, Args1...>, black_magic::S<Args2...>>
         {
             void operator()(F cparams)
@@ -6378,7 +6380,7 @@ namespace crow
             }
         };
 
-        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1, typename ... Args2> 
+        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1, typename ... Args2>
         struct call<F, NInt, NUint, NDouble, NString, black_magic::S<uint64_t, Args1...>, black_magic::S<Args2...>>
         {
             void operator()(F cparams)
@@ -6389,7 +6391,7 @@ namespace crow
             }
         };
 
-        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1, typename ... Args2> 
+        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1, typename ... Args2>
         struct call<F, NInt, NUint, NDouble, NString, black_magic::S<double, Args1...>, black_magic::S<Args2...>>
         {
             void operator()(F cparams)
@@ -6400,7 +6402,7 @@ namespace crow
             }
         };
 
-        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1, typename ... Args2> 
+        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1, typename ... Args2>
         struct call<F, NInt, NUint, NDouble, NString, black_magic::S<std::string, Args1...>, black_magic::S<Args2...>>
         {
             void operator()(F cparams)
@@ -6411,15 +6413,15 @@ namespace crow
             }
         };
 
-        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1> 
+        template <typename F, int NInt, int NUint, int NDouble, int NString, typename ... Args1>
         struct call<F, NInt, NUint, NDouble, NString, black_magic::S<>, black_magic::S<Args1...>>
         {
             void operator()(F cparams)
             {
-                if (cparams.handler) 
+                if (cparams.handler)
                 {
                     cparams.res = cparams.handler(
-                        cparams.params.template get<typename Args1::type>(Args1::pos)... 
+                        cparams.params.template get<typename Args1::type>(Args1::pos)...
                     );
                     cparams.res.end();
                     return;
@@ -6428,7 +6430,7 @@ namespace crow
                 {
                     cparams.res = cparams.handler_with_req(
                         cparams.req,
-                        cparams.params.template get<typename Args1::type>(Args1::pos)... 
+                        cparams.params.template get<typename Args1::type>(Args1::pos)...
                     );
                     cparams.res.end();
                     return;
@@ -6438,7 +6440,7 @@ namespace crow
                     cparams.handler_with_req_res(
                         cparams.req,
                         cparams.res,
-                        cparams.params.template get<typename Args1::type>(Args1::pos)... 
+                        cparams.params.template get<typename Args1::type>(Args1::pos)...
                     );
                     return;
                 }
@@ -6454,7 +6456,7 @@ namespace crow
             : rule_(std::move(rule))
         {
         }
-        
+
         self_t& name(std::string name) noexcept
         {
             name_ = std::move(name);
@@ -6488,9 +6490,9 @@ namespace crow
         operator()(Func&& f)
         {
             static_assert(black_magic::CallHelper<Func, black_magic::S<Args...>>::value ||
-                black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value , 
+                black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value ,
                 "Handler type is mismatched with URL paramters");
-            static_assert(!std::is_same<void, decltype(f(std::declval<Args>()...))>::value, 
+            static_assert(!std::is_same<void, decltype(f(std::declval<Args>()...))>::value,
                 "Handler function cannot have void return type; valid return types: string, int, crow::resposne, crow::json::wvalue");
 
                 handler_ = [f = std::move(f)](Args ... args){
@@ -6503,14 +6505,14 @@ namespace crow
         template <typename Func>
         typename std::enable_if<
             !black_magic::CallHelper<Func, black_magic::S<Args...>>::value &&
-            black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value, 
+            black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value,
             void>::type
         operator()(Func&& f)
         {
             static_assert(black_magic::CallHelper<Func, black_magic::S<Args...>>::value ||
-                black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value, 
+                black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value,
                 "Handler type is mismatched with URL paramters");
-            static_assert(!std::is_same<void, decltype(f(std::declval<crow::request>(), std::declval<Args>()...))>::value, 
+            static_assert(!std::is_same<void, decltype(f(std::declval<crow::request>(), std::declval<Args>()...))>::value,
                 "Handler function cannot have void return type; valid return types: string, int, crow::resposne, crow::json::wvalue");
 
                 handler_with_req_ = [f = std::move(f)](const crow::request& req, Args ... args){
@@ -6523,16 +6525,16 @@ namespace crow
         template <typename Func>
         typename std::enable_if<
             !black_magic::CallHelper<Func, black_magic::S<Args...>>::value &&
-            !black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value, 
+            !black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value,
             void>::type
         operator()(Func&& f)
         {
             static_assert(black_magic::CallHelper<Func, black_magic::S<Args...>>::value ||
                 black_magic::CallHelper<Func, black_magic::S<crow::request, Args...>>::value ||
                 black_magic::CallHelper<Func, black_magic::S<crow::request, crow::response&, Args...>>::value
-                , 
+                ,
                 "Handler type is mismatched with URL paramters");
-            static_assert(std::is_same<void, decltype(f(std::declval<crow::request>(), std::declval<crow::response&>(), std::declval<Args>()...))>::value, 
+            static_assert(std::is_same<void, decltype(f(std::declval<crow::request>(), std::declval<crow::response&>(), std::declval<Args>()...))>::value,
                 "Handler function with response argument should have void return type");
 
                 handler_with_req_res_ = std::move(f);
@@ -6554,15 +6556,15 @@ namespace crow
         {
             call<
                 call_params<
-                    decltype(handler_), 
+                    decltype(handler_),
                     decltype(handler_with_req_),
-                    decltype(handler_with_req_res_)>, 
-                0, 0, 0, 0, 
-                black_magic::S<Args...>, 
+                    decltype(handler_with_req_res_)>,
+                0, 0, 0, 0,
+                black_magic::S<Args...>,
                 black_magic::S<>
             >()(
                 call_params<
-                    decltype(handler_), 
+                    decltype(handler_),
                     decltype(handler_with_req_),
                     decltype(handler_with_req_res_)>
                 {handler_, handler_with_req_, handler_with_req_res_, params, req, res}
@@ -6598,11 +6600,11 @@ namespace crow
 
             bool IsSimpleNode() const
             {
-                return 
+                return
                     !rule_index &&
                     std::all_of(
-                        std::begin(param_childrens), 
-                        std::end(param_childrens), 
+                        std::begin(param_childrens),
+                        std::end(param_childrens),
                         [](unsigned x){ return !x; });
             }
         };
@@ -6976,14 +6978,14 @@ public:
                 CROW_LOG_ERROR << "An uncaught exception occurred: " << e.what();
                 res = response(500);
                 res.end();
-                return;   
+                return;
             }
             catch(...)
             {
                 CROW_LOG_ERROR << "An uncaught exception occurred. The type was unknown so no information was available.";
                 res = response(500);
                 res.end();
-                return;   
+                return;
             }
         }
 
@@ -7022,7 +7024,7 @@ namespace crow
             template <int N>
             using partial = typename std::conditional<N == sizeof...(Middlewares)-1, partial_context, typename parent_context::template partial<N>>::type;
 
-            template <typename T> 
+            template <typename T>
             typename T::context& get()
             {
                 return static_cast<typename T::context&>(*this);
@@ -7051,7 +7053,7 @@ namespace crow
             template <int N, typename Context, typename Container, typename CurrentMW, typename ... Middlewares2>
             friend bool middleware_call_helper(Container& middlewares, request& req, response& res, Context& ctx);
 
-            template <typename T> 
+            template <typename T>
             typename T::context& get()
             {
                 return static_cast<typename T::context&>(*this);
@@ -7097,7 +7099,7 @@ namespace crow
     namespace detail
     {
         template <typename MW, typename Context, typename ParentContext>
-        void before_handler_call(MW& mw, request& req, response& res, Context& ctx, ParentContext& parent_ctx, 
+        void before_handler_call(MW& mw, request& req, response& res, Context& ctx, ParentContext& parent_ctx,
             decltype(std::declval<MW>().before_handle(std::declval<request&>(), std::declval<response&>(), std::declval<typename MW::context&>()))* dummy = 0)
         {
             mw.before_handle(req, res, ctx.template get<MW>());
@@ -7111,14 +7113,14 @@ namespace crow
         }
 
         template <typename MW, typename Context, typename ParentContext>
-        void after_handler_call(MW& mw, request& req, response& res, Context& ctx, ParentContext& parent_ctx, 
+        void after_handler_call(MW& mw, request& req, response& res, Context& ctx, ParentContext& parent_ctx,
             decltype(std::declval<MW>().before_handle(std::declval<request&>(), std::declval<response&>(), std::declval<typename MW::context&>()))* dummy = 0)
         {
             mw.after_handle(req, res, ctx.template get<MW>());
         }
 
         template <typename MW, typename Context, typename ParentContext>
-        void after_handler_call(MW& mw, request& req, response& res, Context& ctx, ParentContext& parent_ctx, 
+        void after_handler_call(MW& mw, request& req, response& res, Context& ctx, ParentContext& parent_ctx,
             decltype(std::declval<MW>().before_handle(std::declval<request&>(), std::declval<response&>(), std::declval<typename MW::context&>(), std::declval<Context&>))* dummy = 0)
         {
             mw.after_handle(req, res, ctx.template get<MW>(), parent_ctx);
@@ -7152,7 +7154,7 @@ namespace crow
         }
 
         template <int N, typename Context, typename Container>
-        typename std::enable_if<(N<0)>::type 
+        typename std::enable_if<(N<0)>::type
         after_handlers_call_helper(Container& middlewares, Context& context, request& req, response& res)
         {
         }
@@ -7185,14 +7187,14 @@ namespace crow
     {
     public:
         Connection(
-            boost::asio::io_service& io_service, 
-            Handler* handler, 
+            boost::asio::io_service& io_service,
+            Handler* handler,
             const std::string& server_name,
             std::tuple<Middlewares...>* middlewares
-            ) 
-            : socket_(io_service), 
-            handler_(handler), 
-            parser_(this), 
+            )
+            : socket_(io_service),
+            handler_(handler),
+            parser_(this),
             server_name_(server_name),
             middlewares_(middlewares)
         {
@@ -7201,7 +7203,7 @@ namespace crow
             CROW_LOG_DEBUG << "Connection open, total " << connectionCount << ", " << this;
 #endif
         }
-        
+
         ~Connection()
         {
             res.complete_request_handler_ = nullptr;
@@ -7318,13 +7320,13 @@ namespace crow
                 detail::after_handlers_call_helper<
                     ((int)sizeof...(Middlewares)-1),
                     decltype(ctx_),
-                    decltype(*middlewares_)> 
+                    decltype(*middlewares_)>
                 (*middlewares_, ctx_, req_, res);
             }
 
             //auto self = this->shared_from_this();
             res.complete_request_handler_ = nullptr;
-            
+
             if (!socket_.is_open())
             {
                 //CROW_LOG_DEBUG << this << " delete (socket is closed) " << is_reading << ' ' << is_writing;
@@ -7447,7 +7449,7 @@ namespace crow
         {
             //auto self = this->shared_from_this();
             is_reading = true;
-            socket_.async_read_some(boost::asio::buffer(buffer_), 
+            socket_.async_read_some(boost::asio::buffer(buffer_),
                 [this](const boost::system::error_code& ec, std::size_t bytes_transferred)
                 {
                     bool error_while_reading = true;
@@ -7486,7 +7488,7 @@ namespace crow
         {
             //auto self = this->shared_from_this();
             is_writing = true;
-            boost::asio::async_write(socket_, buffers_, 
+            boost::asio::async_write(socket_, buffers_,
                 [&](const boost::system::error_code& ec, std::size_t bytes_transferred)
                 {
                     is_writing = false;
@@ -7527,7 +7529,7 @@ namespace crow
         {
             auto& timer_queue = detail::dumb_timer_queue::get_current_dumb_timer_queue();
             cancel_deadline_timer();
-            
+
             timer_cancel_key_ = timer_queue.add([this]
             {
                 if (!socket_.is_open())
@@ -7598,15 +7600,15 @@ namespace crow
 {
     using namespace boost;
     using tcp = asio::ip::tcp;
-    
+
     template <typename Handler, typename ... Middlewares>
     class Server
     {
     public:
         Server(Handler* handler, uint16_t port, std::tuple<Middlewares...>* middlewares = nullptr, uint16_t concurrency = 1)
-            : acceptor_(io_service_, tcp::endpoint(asio::ip::address(), port)), 
+            : acceptor_(io_service_, tcp::endpoint(asio::ip::address(), port)),
             signals_(io_service_, SIGINT, SIGTERM),
-            handler_(handler), 
+            handler_(handler),
             concurrency_(concurrency),
             port_(port),
             middlewares_(middlewares)
@@ -7679,7 +7681,7 @@ namespace crow
         void do_accept()
         {
             auto p = new Connection<Handler, Middlewares...>(pick_io_service(), handler_, server_name_, middlewares_);
-            acceptor_.async_accept(p->socket(), 
+            acceptor_.async_accept(p->socket(),
                 [this, p](boost::system::error_code ec)
                 {
                     if (!ec)
@@ -7698,7 +7700,7 @@ namespace crow
 
         Handler* handler_;
         uint16_t concurrency_{1};
-        std::string server_name_ = "Crow/0.1";
+        std::string server_name_ = "Amordader: The Amordad Server";
         uint16_t port_;
         unsigned int roundrobin_index_{};
 
@@ -7721,7 +7723,7 @@ namespace crow
 
 
 
- 
+
 
 
 

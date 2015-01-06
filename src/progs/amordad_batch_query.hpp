@@ -170,7 +170,6 @@ get_filenames(const string &path_file, vector<string> &file_names) {
   file_names.clear();
   string line;
   while (getline(in, line))
-      cout << line << "\n";
       file_names.push_back(line);
 }
 
@@ -186,7 +185,6 @@ get_queries(const string &queries_file, vector<FeatureVector> &queries) {
 
   for(size_t i = 0; i < query_files.size(); ++i) {
     FeatureVector fv;
-    cout << query_files[i].c_str() << "\n";
     if (!FileExists(query_files[i]))
         throw SMITHLABException("File not found: " + query_files[i]);
     std::ifstream in(query_files[i].c_str());
@@ -209,7 +207,6 @@ get_database(const bool VERBOSE, const string &db_file,
 
   for(size_t i = 0; i < fv_files.size(); ++i) {
     FeatureVector fv;
-    cout << fv_files[i].c_str() << "\n";
     if (!FileExists(fv_files[i]))
         throw SMITHLABException("File not found: " + fv_files[i]);
     std::ifstream in(fv_files[i].c_str());
