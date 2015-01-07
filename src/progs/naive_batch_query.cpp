@@ -30,7 +30,7 @@ main(int argc, const char **argv) {
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "batch query a set of "
                            "feature vectors",
-                           "<database-file> <query-folder-path> <outfile>");
+                           "<database-file> <query-file> <outfile>");
     opt_parse.add_opt("neighbors", 'n', "number of nearest neighbors to report",
                       false, n_neighbors);
     opt_parse.add_opt("mpr", 'r', "maximum proximity radius",

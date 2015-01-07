@@ -90,7 +90,7 @@ int run_naive_batch_query(vector<FeatureVector> database, string query_dir){
      * TODO: these should ideally come from the query itself?
      * E.g http://localhost/naivequery/test?n_neighbors=1*max_proximity_radius=0.9
      **/
-    size_t n_neighbors = 1;
+    size_t n_neighbors = 10;
     double max_proximity_radius = 0.75;
     // Inside the query directory create a ;query_filepath.query' file
     // @see walk_dir_and_create_query_file()
@@ -177,7 +177,7 @@ int main()
     // argument
     CROW_ROUTE(app,"/naivequery/<string>")
     ([&](string dirpath){
-        dirpath = "/media/data1/Development_Version_Controlled/Research/Amordad/src/progs/"+dirpath;
+        dirpath = UPLOAD_DIR_LOCATION+dirpath;
         return run_naive_batch_query(database, dirpath);
     });
 
