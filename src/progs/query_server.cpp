@@ -31,6 +31,20 @@
 #include <sstream>
 
 /*
+ * Appends errors to an .error file
+ *
+ **/
+
+void append_error_to_file(string error, string query_dir){
+    string errfile = query_dir + "/" + "error_logs.error";
+    string outfile = query_dir + "/" + "query_paths.query";
+    istd::ofstream outfile
+    outfile.open(errfile, std::ios_base::app);
+    outfile << error;
+    return 0;
+}
+
+/*
  * Load all database files in memory for once and all
  * @return database A vector of Featurevector
  */
@@ -174,13 +188,26 @@ int main()
         return x;
     });
 
-    // argument
+    // Naive Query Handler
     CROW_ROUTE(app,"/naivequery/<string>")
     ([&](string dirpath){
         dirpath = UPLOAD_DIR_LOCATION+dirpath;
         return run_naive_batch_query(database, dirpath);
     });
 
+
+    // Job Status
+    // TODO: This method currently just relies on walking the input directory
+    // and checking if a ".output" file exists. This is not foolproof
+    // A simple check would be to dump a ".error" file on each query.
+    // This .error file should contain the error message which can also
+    // be relayed back to the user.
+
+    CROW_ROUTE(app,"/status/<string>")
+    ([&](string dirpath){
+        dirpath = UPLOAD_DIR_LOCATION+dirpath;
+        return run_naive_batch_query(database, dirpath);
+    });
 
     // more json example
     CROW_ROUTE(app, "/add_json")
