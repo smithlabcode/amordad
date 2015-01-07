@@ -18,6 +18,7 @@
 #
 
 PROGS = build_graph_naively naive_batch_query \
+				naive_batch_insert naive_batch_delete\
 	normalize_feature_vector normalize_features compute_normalizers \
 	generate_hash_function populate_hash_table build_graph \
 	amordad_batch_query \
