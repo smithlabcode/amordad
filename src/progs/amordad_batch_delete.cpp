@@ -55,21 +55,6 @@ typedef LSHAngleHashFunction LSHFun;
 
 size_t comparisons = 0;
 
-struct Result {
-  Result(const string &i, const double v) : id(i), val(v) {}
-  Result() : val(std::numeric_limits<double>::max()) {}
-  bool operator<(const Result &other) const {return val < other.val;}
-  string id;
-  double val;
-};
-
-
-std::ostream &
-operator<<(std::ostream &os, const Result &r) {
-  return os << r.id << '\t' << r.val;
-}
-
-
 static void
 execute_deletion(unordered_map<string, FeatureVector> &fvs,
                   const unordered_map<string, LSHFun> &hfs,
@@ -97,8 +82,8 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
       i->second.remove(query, bucket_number);
   }
 
-  /// follow a lazy deletion strategy
-  /// only outgoing edges of the vertex are deleted
+  /// FOLLOW A LAZY DELETION STRATEGY
+  /// ONLY OUTGOING EDGES OF THE VERTEX ARE DELETED
   // delete the outgoing edges of query from the graph
   g.remove_out_edges(query.get_id());
 
@@ -145,22 +130,19 @@ get_filenames(const string &path_file, vector<string> &file_names) {
 }
 
 
-/*
- * See what is inside insertion_dir and loads all the insertions
- */
 static void
-get_insertions(const string &insertions_file, vector<FeatureVector> &insertions) {
+get_deletions(const string &deletions_file, vector<FeatureVector> &deletions) {
 
-  vector<string> insertion_files;
-  get_filenames(insertions_file, insertion_files);
+  vector<string> deletion_files;
+  get_filenames(deletions_file, deletion_files);
 
-  for(size_t i = 0; i < insertion_files.size(); ++i) {
+  for(size_t i = 0; i < deletion_files.size(); ++i) {
     FeatureVector fv;
-    std::ifstream in(insertion_files[i].c_str());
+    std::ifstream in(deletion_files[i].c_str());
     if (!in)
-      throw SMITHLABException("bad feature vector file: " + insertion_files[i]);
+      throw SMITHLABException("bad feature vector file: " + deletion_files[i]);
     in >> fv;
-    insertions.push_back(fv);
+    deletions.push_back(fv);
   }
 }
 
