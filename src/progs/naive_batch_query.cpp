@@ -24,7 +24,7 @@ main(int argc, const char **argv) {
   try {
 
     bool VERBOSE = false;
-    size_t n_neighbors = 1;
+    size_t n_neighbors = 10;
     double max_proximity_radius = 0.75;
 
     /****************** COMMAND LINE OPTIONS ********************/
@@ -113,11 +113,13 @@ main(int argc, const char **argv) {
     std::ofstream out(outfile.c_str());
     if (!out)
       throw SMITHLABException("bad output file: " + outfile);
+
+    //First line is the query line
+    //TODO This should be moved to a separate method writeResults, which would be generic
     for (size_t i = 0; i < queries.size(); ++i) {
-      out << queries[i].get_id() << '\t';
+      out << queries[i].get_id() << '\t' << endl;
       copy(results[i].begin(), results[i].end(),
-           std::ostream_iterator<Result>(out, "\t"));
-      out << endl;
+           std::ostream_iterator<Result>(out, "\t\n"));
     }
 
     if (VERBOSE)

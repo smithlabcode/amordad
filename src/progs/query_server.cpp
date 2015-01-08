@@ -25,9 +25,9 @@
 #define PORT 18080 // Port to run the server at
 // Set this to absolute location of the database file
 // TODO Document the database file format
-#define DATABASE_FILEPATH "/media/data1/Development_Version_Controlled/Research/Amordad/src/progs/mgrast_k5_paths.txt"
+#define DATABASE_FILEPATH "/media/data1/Development_Version_Controlled/Research/Amordad/src/progs/config/mgrast_k5_paths.txt"
 // Set this to location where the PHP code creates the upload directories
-#define UPLOAD_DIR_LOCATION "/media/data1/Development_Version_Controlled/Research/Amordad/src/progs/"
+#define UPLOAD_DIR_LOCATION "/var/www/html/uploads/"
 #include <sstream>
 
 /*
@@ -37,11 +37,8 @@
 
 void append_error_to_file(string error, string query_dir){
     string errfile = query_dir + "/" + "error_logs.error";
-    string outfile = query_dir + "/" + "query_paths.query";
-    istd::ofstream outfile
-    outfile.open(errfile, std::ios_base::app);
+    std::ofstream outfile(errfile.c_str());
     outfile << error;
-    return 0;
 }
 
 /*
@@ -148,13 +145,13 @@ int run_naive_batch_query(vector<FeatureVector> database, string query_dir){
     for (size_t i = 0; i < queries.size(); ++i) {
         out << queries[i].get_id() << '\t';
         copy(results[i].begin(), results[i].end(),
-            std::ostream_iterator<Result>(out, "\t"));
-        out << endl;
+            std::ostream_iterator<Result>(out, "\t\n"));
+        out << "\n";
     }
 
     if (VERBOSE)
         cerr << comparisons << endl;
-    return 0;
+    return 1;
 }
 
 
@@ -192,7 +189,8 @@ int main()
     CROW_ROUTE(app,"/naivequery/<string>")
     ([&](string dirpath){
         dirpath = UPLOAD_DIR_LOCATION+dirpath;
-        return run_naive_batch_query(database, dirpath);
+        run_naive_batch_query(database, dirpath);
+        return "Submitted";// + dirpath;
     });
 
 
