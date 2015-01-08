@@ -226,7 +226,8 @@ get_insertions(const string &insertions_file, vector<FeatureVector> &insertions)
 
 
 static void
-get_database(const string &db_file, 
+get_database(const bool VERBOSE,
+             const string &db_file, 
              unordered_map<string, FeatureVector> &db) {
   
   vector<string> fv_files;
@@ -241,7 +242,15 @@ get_database(const string &db_file,
       throw SMITHLABException("bad feature vector file: " + fv_files[i]);
     in >> fv;
     db[fv.get_id()] = fv;
+
+    if (VERBOSE)
+      cerr << '\r' << "loading feature vectors: "
+           << percent(i, fv_files.size()) << "%\r";
   }
+
+  if (VERBOSE)
+    cerr << '\r' << "loading feature vectors: 100% ("
+         << fv_files.size() << ")" << endl;
 }
 
 
@@ -304,9 +313,9 @@ main(int argc, const char **argv) {
     read_config_file(database_config_file, fv_paths_file, hf_paths_file,
                      ht_paths_file, graph_file);
     
-    // reading insertions
+    // loading feature vectors
     unordered_map<string, FeatureVector> fv_lookup;
-    get_database(fv_paths_file, fv_lookup);
+    get_database(VERBOSE, fv_paths_file, fv_lookup);
     
     vector<string> hash_function_files, hash_table_files;
     get_filenames(hf_paths_file, hash_function_files);
@@ -319,6 +328,9 @@ main(int argc, const char **argv) {
     std::ifstream g_in(graph_file.c_str());
     if (!g_in)
       throw SMITHLABException("cannot load graph: " + graph_file);
+
+    if (VERBOSE)
+      cerr << "loading graph" << endl;
 
     RegularNearestNeighborGraph nng;
     g_in >> nng;
@@ -405,12 +417,21 @@ main(int argc, const char **argv) {
 
 
     // writing graph back to the outfile
+    if (VERBOSE)
+      cerr << "UPDATED GRAPH: "
+           << "[name=" << nng.get_graph_name() << "]"
+           << "[vertices=" << nng.get_vertex_count() << "]"
+           << "[edges=" << nng.get_edge_count() << "]"
+           << "[max_degree=" << nng.get_maximum_degree() << "]" << endl;
+
     std::ofstream of;
     if (!outfile.empty()) of.open(outfile.c_str());
     if (!of) throw SMITHLABException("cannot write to file: " + outfile);
     std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
     
     out << nng << endl;
+    if (VERBOSE)
+      cerr << "writing graph back: 100%" << endl;
 
     // writing every hash table back
     size_t count = 0;
@@ -432,12 +453,16 @@ main(int argc, const char **argv) {
     vector<string> fv_files, insertion_files;
     get_filenames(fv_paths_file, fv_files);
     get_filenames(insertions_file, insertion_files);
-    std::ofstream of_fvs((fv_paths_file + ".up").c_str());
+    std::ofstream of_fvs((basename(fv_paths_file) + ".up").c_str());
     for (size_t i = 0; i < fv_files.size(); ++i)
       of_fvs << fv_files[i] << endl;
 
     for (size_t i = 0; i < insertion_files.size(); ++i)
       of_fvs << insertion_files[i] << endl;
+
+    if (VERBOSE)
+      cerr << '\r' << "writing fv paths file back: 100%"
+           << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
