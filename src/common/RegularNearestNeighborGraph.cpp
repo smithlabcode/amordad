@@ -174,7 +174,7 @@ RegularNearestNeighborGraph::add_vertex_if_new(const string &id) {
 
 void
 RegularNearestNeighborGraph::remove_out_edges(const nng_vertex &u) {
-  boost::clear_out_edges(u, the_edge);
+  boost::clear_out_edges(u, the_graph);
 }
 
 
