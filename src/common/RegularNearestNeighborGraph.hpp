@@ -77,6 +77,9 @@ public:
   bool update_vertex(const std::string &u, const std::string &v, 
                      const double &w);
   
+  void remove_out_edges(const std::string &id);
+  void remove_out_edges(const nng_vertex &u);
+
   std::string tostring() const;
   
 private:

@@ -173,6 +173,22 @@ RegularNearestNeighborGraph::add_vertex_if_new(const string &id) {
 
 
 void
+RegularNearestNeighborGraph::remove_out_edges(const nng_vertex &u) {
+  boost::clear_out_edges(u, the_edge);
+}
+
+
+void
+RegularNearestNeighborGraph::remove_out_edges(const string &u) {
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(u));
+  if (u_idx == name_to_index.end())
+    throw SMITHLABException("attempt to remove edges from unknown vertex: "+ u);
+  else
+    remove_out_edges(u_idx->second);
+}
+
+
+void
 RegularNearestNeighborGraph::add_vertices(const vector<string> &ids) {
   for (size_t i = 0; i < ids.size(); ++i)
     add_vertex(ids[i]);
