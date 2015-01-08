@@ -413,20 +413,31 @@ main(int argc, const char **argv) {
     out << nng << endl;
 
     // writing every hash table back
+    size_t count = 0;
     for (unordered_map<string,LSHTab>::const_iterator i(ht_lookup.begin());
          i != ht_lookup.end(); ++i) {
       std::ofstream of_ht((i->first + ".up").c_str());
       of_ht << i->second << endl;
 
+      count++;
       if (VERBOSE)
         cerr << '\r' << "writing hashtables back: "
-             << percent(i, ht_lookup.size()) << "%\r";
+             << percent(count, ht_lookup.size()) << "%\r";
     }
     if (VERBOSE)
       cerr << '\r' << "writing hashtables back: 100% ("
            << ht_lookup.size() << ")" << endl;
 
     // writing fv_paths_file back 
+    vector<string> fv_files, insertion_files;
+    get_filenames(fv_paths_file, fv_files);
+    get_filenames(insertions_file, insertion_files);
+    std::ofstream of_fvs((fv_paths_file + ".up").c_str());
+    for (size_t i = 0; i < fv_files.size(); ++i)
+      of_fvs << fv_files[i] << endl;
+
+    for (size_t i = 0; i < insertion_files.size(); ++i)
+      of_fvs << insertion_files[i] << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
