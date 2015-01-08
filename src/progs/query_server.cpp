@@ -142,11 +142,12 @@ int run_naive_batch_query(vector<FeatureVector> database, string query_dir){
     std::ofstream out(outfile.c_str());
     if (!out)
         throw SMITHLABException("bad output file: " + outfile);
+    //First line is the query line
+    //TODO This should be moved to a separate method writeResults, which would be generic
     for (size_t i = 0; i < queries.size(); ++i) {
-        out << queries[i].get_id() << '\t';
-        copy(results[i].begin(), results[i].end(),
-            std::ostream_iterator<Result>(out, "\t\n"));
-        out << "\n";
+      out << queries[i].get_id() << '\t' << endl;
+      copy(results[i].begin(), results[i].end(),
+           std::ostream_iterator<Result>(out, "\t\n"));
     }
 
     if (VERBOSE)
