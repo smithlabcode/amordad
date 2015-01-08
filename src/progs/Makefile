@@ -21,7 +21,7 @@ PROGS = build_graph_naively naive_batch_query \
 	normalize_feature_vector normalize_features compute_normalizers \
 	generate_hash_function populate_hash_table build_graph \
 	amordad_batch_query \
-	simulate_feature_vector
+	simulate_feature_vector query_server
 
 ifndef SMITHLAB_CPP
 	SMITHLAB_CPP = ../smithlab_cpp
@@ -30,14 +30,13 @@ endif
 COMMON = ../common
 
 INCLUDEDIRS = $(SMITHLAB_CPP) $(COMMON)
-INCLUDEDIRS += $(BOOST)
 INCLUDEARGS = $(addprefix -I,$(INCLUDEDIRS))
 
 CXX = g++
-CXXFLAGS = -Wall -fmessage-length=50
-OPTFLAGS = -O2
-DEBUGFLAGS = -g -pg
-LIBS = -lgsl -lgslcblas
+CXXFLAGS = -Wall -fmessage-length=50 -std=c++1y
+OPTFLAGS = -O3
+DEBUGFLAGS = -DNDEBUG #-g -pg
+LIBS = -lgsl -lgslcblas -rdynamic -lboost_date_time -lboost_filesystem -lboost_system -lboost_thread -lpthread
 
 # Flags for Mavericks
 ifeq "$(shell uname)" "Darwin"
