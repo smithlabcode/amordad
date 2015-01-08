@@ -138,7 +138,7 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
     if (bucket != i->second.end())
       candidates.insert(bucket->second.begin(), bucket->second.end());
     
-    /// TODO: MUST INSERT THE QUERY INTO EACH HASH TABLE
+    // INSERT THE QUERY INTO EACH HASH TABLE
     i->second.insert(query, bucket_number);
   }
 
@@ -157,13 +157,11 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
   vector<Result> neighbors;
   evaluate_candidates(fvs, query, n_neighbors, candidates, neighbors);
   
-  /// TODO: MUST CONNECT THE QUERY TO EACH OF THE "RESULT" NEIGHBORS
-  /// IN THE GRAPH
+  // CONNECT THE QUERY TO EACH OF THE "RESULT" NEIGHBORS
+  // IN THE GRAPH
   for (vector<Result>::const_iterator i(neighbors.begin());
-      i != neighbors.end(); ++i) {
-    g.update_vertex(i->id, query.get_id(), i->val);
+       i != neighbors.end(); ++i)
     g.update_vertex(query.get_id(), i->id, i->val);
-  }
 
   return true;
 }
@@ -325,7 +323,7 @@ main(int argc, const char **argv) {
     RegularNearestNeighborGraph nng;
     g_in >> nng;
 
-    /// TODO: THIS IS THE DEGREE OF THE GRAPH AND SHOULD BE OBTAINED
+    /// THIS IS THE DEGREE OF THE GRAPH AND SHOULD BE OBTAINED
     /// FROM THE DATABASE ITSELF, AS IT IS ENCODED IN THE GRAPH FILE
     size_t n_neighbors = nng.get_maximum_degree();
 
@@ -405,6 +403,30 @@ main(int argc, const char **argv) {
     ///// NOW WRITE THE DATABASE BACK TO DISK //////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
+
+    // writing graph back to the outfile
+    std::ofstream of;
+    if (!outfile.empty()) of.open(outfile.c_str());
+    if (!of) throw SMITHLABException("cannot write to file: " + outfile);
+    std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
+    
+    out << nng << endl;
+
+    // writing every hash table back
+    for (unordered_map<string,LSHTab>::const_iterator i(ht_lookup.begin());
+         i != ht_lookup.end(); ++i) {
+      std::ofstream of_ht((i->first + ".up").c_str());
+      of_ht << i->second << endl;
+
+      if (VERBOSE)
+        cerr << '\r' << "writing hashtables back: "
+             << percent(i, ht_lookup.size()) << "%\r";
+    }
+    if (VERBOSE)
+      cerr << '\r' << "writing hashtables back: 100% ("
+           << ht_lookup.size() << ")" << endl;
+
+    // writing fv_paths_file back 
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
