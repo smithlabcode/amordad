@@ -37,7 +37,6 @@ using std::string;
 using std::pair;
 using std::make_pair;
 
-
 size_t
 LSHAngleHashTable::max_bucket_load() const {
   size_t max_load = 0;
@@ -64,7 +63,7 @@ LSHAngleHashTable::remove(const FeatureVector &fv, const size_t hash_key) {
                             + hash_key);
   else {
     // locate fv in the hashed bucket
-    vector<string>::iterator pos = find(x->second.begin(),
+    vector<string>::iterator pos = std::find(x->second.begin(),
                                         x->second.end(),
                                         fv.get_id());
     if (pos == x->second.end()) 
