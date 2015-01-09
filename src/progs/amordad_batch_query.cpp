@@ -104,12 +104,11 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
 }
 
 
-
 static void
 execute_query(const unordered_map<string, FeatureVector> &fvs,
               const unordered_map<string, LSHFun> &hfs,
               const unordered_map<string, LSHTab> &hts,
-              const RegularNearestNeighborGraph &g,
+              RegularNearestNeighborGraph &g,
               const FeatureVector &query,
               const size_t n_neighbors,
               const double max_proximity_radius,
@@ -145,14 +144,32 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
     // check each neighbor to see whether it is marked as deleted
     // the way to check that is to see whether it has no outgoing
     // edges, if that is the case, it was deleted before
+    
+    vector<vector<string>::iterator> deleted_nodes;
+    for (vector<string>::iterator j(neighbors.begin());
+         j != neighbors.end(); ++j) {
+      vector<string> out_edges;
+      vector<double> out_edges_dists;
+      g.get_neighbors(*j, out_edges, out_edges_dists);
+      // no out_edges, deleted node
+      if(out_edges.size() == 0) {
+        // remove from neighbors, because it was already deleted
+        deleted_nodes.push_back(j);
+        // remove the edge between the candidate and the deleted node
+        g.remove_edge(*i, *j);
+        // TODO: check whether the deleted node has no in edges, if yes,
+        // remove the node from the graph
+      }
+    }
+    for (vector<vector<string>::iterator>::const_iterator j(deleted_nodes.begin());
+         j != deleted_nodes.end(); ++j)
+      neighbors.erase(*j);
 
     candidates_from_graph.insert(neighbors.begin(), neighbors.end());
   }
 
   candidates.insert(candidates_from_graph.begin(), candidates_from_graph.end());
 
-  // evaluate_candidates(fv_files_lookup, query, n_neighbors,
-  //                     max_proximity_radius, candidates, results);
   evaluate_candidates(fvs, query, n_neighbors,
                       max_proximity_radius, candidates, results);
 }
