@@ -70,65 +70,6 @@ operator<<(std::ostream &os, const Result &r) {
 }
 
 
-// static void
-// get_feature_vector(const string &id,
-//                    const unordered_map<string, string> &fv_path_lookup,
-//                    FeatureVector &fv) {
-//   unordered_map<string, string>::const_iterator i(fv_path_lookup.find(id));
-//   if (i == fv_path_lookup.end())
-//     throw SMITHLABException("cannot find file for: " + id);
-
-//   std::ifstream in(i->second.c_str());
-//   if (!in)
-//     throw SMITHLABException("bad feature vector file: " + i->second);
-//   in >> fv;
-// }
-
-// static void
-// get_feature_vector_paths_lookup(const string &fv_paths_file,
-//                                 unordered_map<string, string> &fv_paths_lookup) {
-//   std::ifstream in(fv_paths_file.c_str());
-//   if (!in)
-//     throw SMITHLABException("bad feature vector paths file: " + fv_paths_file);
-
-//   string fv_id, fv_path;
-//   while (in >> fv_id >> fv_path)
-//     fv_paths_lookup[fv_id] = fv_path;
-// }
-
-// static void
-// evaluate_candidates(const unordered_map<string, string>& fv_file_lookup,
-//                     const FeatureVector &query,
-//                     const size_t n_neighbors,
-//                     const double max_proximity_radius,
-//                     const unordered_set<string> &candidates,
-//                     vector<Result> &results) {
-
-//   std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
-//   double current_dist_cutoff = max_proximity_radius;
-//   for (unordered_set<string>::const_iterator i(candidates.begin());
-//        i != candidates.end(); ++i) {
-//     FeatureVector fv;
-//     get_feature_vector(*i, fv_file_lookup, fv);
-//     const double dist = query.compute_angle(fv);
-//     if (dist < current_dist_cutoff) {
-//       if (pq.size() == n_neighbors) {
-//         pq.pop();
-//         current_dist_cutoff = dist;
-//       }
-//       pq.push(Result(*i, dist));
-//     }
-//   }
-
-//   results.clear();
-//   while (!pq.empty()) {
-//     results.push_back(pq.top());
-//     pq.pop();
-//   }
-//   reverse(results.begin(), results.end());
-// }
-
-
 static void
 evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
                     const FeatureVector &query,
@@ -200,6 +141,11 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
     vector<string> neighbors;
     vector<double> neighbor_dists;
     g.get_neighbors(*i, neighbors, neighbor_dists);
+
+    // check each neighbor to see whether it is marked as deleted
+    // the way to check that is to see whether it has no outgoing
+    // edges, if that is the case, it was deleted before
+
     candidates_from_graph.insert(neighbors.begin(), neighbors.end());
   }
 
