@@ -189,6 +189,37 @@ RegularNearestNeighborGraph::remove_out_edges(const string &u) {
 
 
 void
+RegularNearestNeighborGraph::remove_edge(const nng_vertex &u, 
+                                         const nng_vertex &v) {
+  
+  // check to see if edge exists
+  bool already_exists;
+  graph_traits<internal_graph>::edge_descriptor the_edge;
+  boost::tie(the_edge, already_exists) = boost::edge(u, v, the_graph);
+  if (!already_exists)
+    throw SMITHLABException("attempt to remove non-existing edge: " + 
+        smithlab::toa(u) + " " + smithlab::toa(v));
+  boost::remove_edge(u, v, the_graph);
+}
+
+
+void 
+RegularNearestNeighborGraph::remove_edge(const string &u, 
+                                         const string &v) {
+
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(u));
+  if (u_idx == name_to_index.end())
+    throw SMITHLABException("cannot remove edge from unknown vertex: " + u);
+
+  unordered_map<string, size_t>::const_iterator v_idx(name_to_index.find(v));
+  if (v_idx == name_to_index.end())
+    throw SMITHLABException("cannot remove edge to unknown vertex: " + v);
+
+  remove_edge(u_idx->second, v_idx->second);
+}
+
+
+void
 RegularNearestNeighborGraph::add_vertices(const vector<string> &ids) {
   for (size_t i = 0; i < ids.size(); ++i)
     add_vertex(ids[i]);
