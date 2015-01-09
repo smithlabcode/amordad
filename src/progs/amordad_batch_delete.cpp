@@ -372,6 +372,8 @@ main(int argc, const char **argv) {
            << ht_lookup.size() << ")" << endl;
 
     // writing fv_paths_file back 
+    // TODO: this part is copied from insertion, need to change
+    // into deletion
     vector<string> fv_files, deletion_files;
     get_filenames(fv_paths_file, fv_files);
     get_filenames(deletions_file, deletion_files);
