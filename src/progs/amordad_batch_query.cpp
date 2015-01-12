@@ -141,18 +141,14 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
     vector<double> neighbor_dists;
     g.get_neighbors(*i, neighbors, neighbor_dists);
 
-    // check each neighbor to see whether it is marked as deleted
-    // the way to check that is to see whether it has no outgoing
-    // edges, if that is the case, it was deleted before
+    // check each neighbor to see whether it has outgoing edges
+    // if no, it was deleted before
     
     vector<vector<string>::iterator> deleted_nodes;
     for (vector<string>::iterator j(neighbors.begin());
          j != neighbors.end(); ++j) {
-      vector<string> out_edges;
-      vector<double> out_edges_dists;
-      g.get_neighbors(*j, out_edges, out_edges_dists);
-      // no out_edges, deleted node
-      if(out_edges.size() == 0) {
+
+      if (g.get_out_degree(*j) == 0) {
         // remove from neighbors, because it was already deleted
         deleted_nodes.push_back(j);
         // remove the edge between the candidate and the deleted node
