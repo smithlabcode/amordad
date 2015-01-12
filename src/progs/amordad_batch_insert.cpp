@@ -149,6 +149,29 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
     vector<string> neighbors;
     vector<double> neighbor_dists;
     g.get_neighbors(*i, neighbors, neighbor_dists);
+
+    /*
+     * check each neighbor to see whether it was deleted before by checking
+     * whether its out degree is zero. We need to remove those previously
+     * deleted vertice from the neighbors and also delete the edge between
+     * the candidate and the deleted vertex
+     */
+
+    vector<vector<string>::iterator> deleted_nodes;
+    for (vector<string>::iterator j(neighbors.begin());
+        j != neighbors.end(); ++j) {
+
+      if (g.get_out_degree(*j) == 0) {
+        deleted_nodes.push_back(j);
+        g.remove_edge(*i, *j);
+        // TODO: check whether the deleted node has no in edges, if yes,
+        // remove the node from the graph
+      }
+    }
+    for (vector<vector<string>::iterator>::const_iterator j(deleted_nodes.begin());
+        j != deleted_nodes.end(); ++j)
+      neighbors.erase(*j);
+
     candidates_from_graph.insert(neighbors.begin(), neighbors.end());
   }
 
