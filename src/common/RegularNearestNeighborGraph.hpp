@@ -64,7 +64,11 @@ public:
   void get_neighbors(const std::string &query,
                      std::vector<std::string> &neighbors,
                      std::vector<double> &distances) const;
-  
+
+  /* out degree */
+  size_t get_out_degree(const nng_vertex &u);
+  size_t get_out_degree(const std::string &id);
+
   // mutators
   void add_edge(const nng_vertex &u, const nng_vertex &v, const double &w);
   void add_edge(const std::string &u, const std::string &v, const double &w);

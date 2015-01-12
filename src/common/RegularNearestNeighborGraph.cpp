@@ -172,6 +172,22 @@ RegularNearestNeighborGraph::add_vertex_if_new(const string &id) {
 }
 
 
+size_t
+RegularNearestNeighborGraph::get_out_degree(const nng_vertex &u) {
+  return boost::out_degree(u, the_graph);
+}
+
+
+size_t
+RegularNearestNeighborGraph::get_out_degree(const std::string &id) {
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(id));
+  if (u_idx == name_to_index.end())
+    throw SMITHLABException("attempt to get degree from unknown vertex: "+ id);
+  else
+    return get_out_degree(u_idx->second);
+}
+
+
 void
 RegularNearestNeighborGraph::remove_out_edges(const nng_vertex &u) {
   boost::clear_out_edges(u, the_graph);
