@@ -377,12 +377,20 @@ main(int argc, const char **argv) {
     vector<string> fv_files, deletion_files;
     get_filenames(fv_paths_file, fv_files);
     get_filenames(deletions_file, deletion_files);
+
+    if (VERBOSE) {
+      cerr << "database size: " << fv_files.size() << endl;
+      cerr << "number of deletions: " << deletion_files.size() << endl;
+    }
+
     std::ofstream of_fvs((basename(fv_paths_file) + ".up").c_str());
-    for (size_t i = 0; i < fv_files.size(); ++i)
-      of_fvs << fv_files[i] << endl;
 
     for (size_t i = 0; i < deletion_files.size(); ++i)
-      of_fvs << deletion_files[i] << endl;
+      fv_files.erase(std::find(fv_files.begin(), fv_files.end(), 
+                               deletion_files[i]));
+
+    for (size_t i = 0; i < fv_files.size(); ++i)
+      of_fvs << fv_files[i] << endl;
 
     if (VERBOSE)
       cerr << '\r' << "writing fv paths file back: 100%"

@@ -115,12 +115,13 @@ main(int argc, const char **argv) {
     get_filenames(database_file, fv_files);
     get_filenames(deletions_file, deletion_files);
 
-    if (VERBOSE)
+    if (VERBOSE) {
       cerr << "database size: " << fv_files.size() << endl;
       cerr << "number of deletions: " << deletion_files.size() << endl;
+    }
 
     for (size_t i = 0; i < deletion_files.size(); ++i) {
-      vector<string>::iterator pos = find(fv_files.begin(), fv_files.end(), 
+      vector<string>::iterator pos = std::find(fv_files.begin(), fv_files.end(), 
                                           deletion_files[i]); 
       if(pos != fv_files.end()) fv_files.erase(pos);
     }
