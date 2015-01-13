@@ -156,21 +156,21 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
      * deleted vertice from the neighbors and also delete the edge between
      * the candidate and the deleted vertex
      */
-
-    vector<vector<string>::iterator> deleted_nodes;
+    
+    vector<string> deleted_nodes;
     for (vector<string>::iterator j(neighbors.begin());
-        j != neighbors.end(); ++j) {
+         j != neighbors.end(); ++j) {
 
       if (g.get_out_degree(*j) == 0) {
-        deleted_nodes.push_back(j);
+        deleted_nodes.push_back(*j);
         g.remove_edge(*i, *j);
         // TODO: check whether the deleted node has no in edges, if yes,
         // remove the node from the graph
       }
     }
-    for (vector<vector<string>::iterator>::const_iterator j(deleted_nodes.begin());
-        j != deleted_nodes.end(); ++j)
-      neighbors.erase(*j);
+    for (vector<string>::const_iterator j(deleted_nodes.begin());
+         j != deleted_nodes.end(); ++j)
+      neighbors.erase(std::find(neighbors.begin(), neighbors.end(), *j ));
 
     candidates_from_graph.insert(neighbors.begin(), neighbors.end());
   }
