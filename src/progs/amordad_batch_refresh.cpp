@@ -53,72 +53,36 @@ using std::tr1::unordered_set;
 typedef LSHAngleHashTable LSHTab;
 typedef LSHAngleHashFunction LSHFun;
 
-size_t comparisons = 0;
-
 
 static void
 execute_refresh(const unordered_map<string, FeatureVector> &fvs,
-              const unordered_map<string, LSHFun> &hfs,
-              const unordered_map<string, LSHTab> &hts,
-              RegularNearestNeighborGraph &g,
-              const size_t n_hfunc) {
+                const unordered_map<string, LSHFun> &replaced_hfs,
+                const unordered_map<string, LSHTab> &hts,
+                RegularNearestNeighborGraph &g) {
 
-  unordered_set<string> candidates;
+  // iterate over replacing hash tables
+  for(unordered_map<string, LSHFun>::const_iterator i(replaced_hfs.begin());
+      i != replaced_hfs.end(); ++i) {
 
-  // iterate over hash tables
-  for (unordered_map<string, LSHTab>::const_iterator i(hts.begin());
-       i != hts.end(); ++i) {
+    unordered_map<string, LSHTab>::const_iterator ht(hts.find(i->first));
+    assert(ht != hts.end());
 
-    unordered_map<string, LSHFun>::const_iterator hf(hfs.find(i->first));
-    assert(hf != hfs.end());
+    // check every bucket to update the graph
+    for(BucketMap::const_iterator b(ht->second.begin());
+        b != ht->second.end(); ++b) {
 
-    // hash the query
-    const size_t bucket_number = hf->second(query);
-    ++comparisons;
-    unordered_map<size_t, vector<string> >::const_iterator
-      bucket = i->second.find(bucket_number);
-
-    if (bucket != i->second.end())
-      candidates.insert(bucket->second.begin(), bucket->second.end());
-  }
-
-  // gather neighbors of candidates
-  unordered_set<string> candidates_from_graph;
-  for (unordered_set<string>::const_iterator i(candidates.begin());
-       i != candidates.end(); ++i) {
-    vector<string> neighbors;
-    vector<double> neighbor_dists;
-    g.get_neighbors(*i, neighbors, neighbor_dists);
-
-    /*
-     * check each neighbor to see whether it was deleted before by checking
-     * whether its out degree is zero. We need to remove those previously
-     * deleted vertice from the neighbors and also delete the edge between
-     * the candidate and the deleted vertex
-     */
-    
-    vector<string> deleted_nodes;
-    for (vector<string>::iterator j(neighbors.begin());
-         j != neighbors.end(); ++j) {
-
-      if (g.get_out_degree(*j) == 0) {
-        deleted_nodes.push_back(*j);
-        g.remove_edge(*i, *j);
-        // TODO: check whether the deleted node has no in edges, if yes,
-        // remove the node from the graph
+      // update every pair of fvs in the same bucket
+      for(size_t j = 0; j < b->second.size(); ++j) {
+        const FeatureVector fv1(fvs.find(b->second[j])->second);
+        for(size_t k = j + 1; k < b->second.size(); ++k) {
+          const FeatureVector fv2(fvs.find(b->second[k])->second);
+          dist = fv1.compute_angle(fv2);
+          g.update_vertex(b->second[j], b->second[k], dist);
+          g.update_vertex(b->second[k], b->second[j], dist);
+        }
       }
     }
-    for (vector<string>::const_iterator j(deleted_nodes.begin());
-         j != deleted_nodes.end(); ++j)
-      neighbors.erase(std::find(neighbors.begin(), neighbors.end(), *j ));
-
-    candidates_from_graph.insert(neighbors.begin(), neighbors.end());
   }
-
-  candidates.insert(candidates_from_graph.begin(), candidates_from_graph.end());
-
-  evaluate_candidates(fvs, query, n_neighbors,
-                      max_proximity_radius, candidates, results);
 }
 
 
@@ -157,26 +121,6 @@ get_filenames(const string &path_file, vector<string> &file_names) {
   string line;
   while (getline(in, line))
     file_names.push_back(line);
-}
-
-
-/*
- * See what is inside query_dir and loads all the queries
- */
-static void
-get_queries(const string &queries_file, vector<FeatureVector> &queries) {
-
-  vector<string> query_files;
-  get_filenames(queries_file, query_files);
-
-  for(size_t i = 0; i < query_files.size(); ++i) {
-    FeatureVector fv;
-    std::ifstream in(query_files[i].c_str());
-    if (!in)
-      throw SMITHLABException("bad feature vector file: " + query_files[i]);
-    in >> fv;
-    queries.push_back(fv);
-  }
 }
 
 
@@ -224,16 +168,13 @@ main(int argc, const char **argv) {
 
     bool VERBOSE = false;
     size_t n_hfunc = 1;
-    double max_proximity_radius = 0.75;
 
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "batch refresh an amordad "
                            "database residing on disk",
-                           "<config-file> <outfile>");
+                           "<config-file>");
     opt_parse.add_opt("hfuncs", 'n', "number of hash functions to replace",
                       false, n_hfunc);
-    opt_parse.add_opt("mpr", 'r', "maximum proximity radius",
-                      false, max_proximity_radius);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
@@ -254,12 +195,9 @@ main(int argc, const char **argv) {
       cerr << opt_parse.help_message() << endl;
       return EXIT_SUCCESS;
     }
-    const string database_config_file(leftover_args.front());
-    const string outfile(leftover_args.back());
+    const string database_config_file(leftover_args.back();
     /****************** END COMMAND LINE OPTIONS *****************/
 
-    if (!validate_file(outfile, 'w'))
-      throw SMITHLABException("bad output file: " + outfile);
 
     ////////////////////////////////////////////////////////////////////////
     ////// READING HASH {FUNCTIONS, TABLES, FEATURE_VECTOR} FILES //////////////
@@ -269,10 +207,8 @@ main(int argc, const char **argv) {
     read_config_file(database_config_file, fv_paths_file, hf_paths_file,
                      ht_paths_file, graph_file);
 
-    // unordered_map<string, string> fv_path_lookup;
-    // get_feature_vector_paths_lookup(fv_paths_file, fv_path_lookup);
 
-    // reading queries
+    // reading database
     unordered_map<string, FeatureVector> fv_lookup;
     get_database(VERBOSE, fv_paths_file, fv_lookup);
 
@@ -302,14 +238,14 @@ main(int argc, const char **argv) {
     ////// READING THE HASH FUNCTIONS //////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    //loading hash functions
-    unordered_map<string, LSHFun> hf_lookup;
+    // loading hash functions
+    unordered_map<string, lshfun> hf_lookup;
     for (size_t i = 0; i < hash_function_files.size(); ++i) {
       std::ifstream hf_in(hash_function_files[i].c_str());
       if (!hf_in)
-        throw SMITHLABException("bad hash function file: " +
+        throw smithlabexception("bad hash function file: " +
                                 hash_function_files[i]);
-      LSHFun hf;
+      lshfun hf;
       hf_in >> hf;
       hf_lookup[hf.get_id()] = hf;
       if (VERBOSE)
@@ -324,6 +260,7 @@ main(int argc, const char **argv) {
     ////////////////////////////////////////////////////////////////////////
 
     unordered_map<string, LSHTab> ht_lookup;
+    unordered_map<string, string> ht_to_paths;
     for (size_t i = 0; i < hash_table_files.size(); ++i) {
       std::ifstream ht_in(hash_table_files[i].c_str());
       if (!ht_in)
@@ -332,6 +269,7 @@ main(int argc, const char **argv) {
       LSHTab ht;
       ht_in >> ht;
       ht_lookup[ht.get_id()] = ht;
+      ht_to_paths[ht.get_id()] = hash_table_files[i];
       if (VERBOSE)
         cerr << '\r' << "load hash tables: "
              << percent(i, hash_table_files.size()) << "%\r";
@@ -346,7 +284,7 @@ main(int argc, const char **argv) {
     ///// STARTING THE REFRESH PROCESS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    execute_query(fv_lookup, hf_lookup, ht_lookup, nng, n_hfunc);
+    execute_refresh(fv_lookup, replaced_hf_lookup, ht_lookup, nng);
 
 
     ////////////////////////////////////////////////////////////////////////
