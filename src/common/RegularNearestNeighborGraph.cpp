@@ -80,8 +80,7 @@ RegularNearestNeighborGraph::update_vertex(const nng_vertex &u,
   graph_traits<internal_graph>::edge_descriptor the_edge;
   boost::tie(the_edge, already_exists) = boost::edge(u, v, the_graph);
   if (already_exists)
-    throw SMITHLABException("attempt to add existing edge: " + 
-                            smithlab::toa(u) + " " + smithlab::toa(v));
+    return false;
   
   if (boost::out_degree(u, the_graph) < maximum_degree) {
     add_edge(u, v, w);

@@ -24,6 +24,7 @@ PROGS = build_graph_naively naive_batch_query \
 	amordad_batch_query \
 	amordad_batch_insert \
 	amordad_batch_delete \
+	update_graph \
 	simulate_feature_vector
 
 ifndef SMITHLAB_CPP
@@ -74,6 +75,9 @@ build_graph : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o)
 
 build_graph_naively : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o)
+
+update_graph : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
+	LSHAngleHashTable.o)
 
 amordad_batch_query : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o)
