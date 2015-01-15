@@ -1,4 +1,0 @@
-Amordad
-=======
-
-Amordad
