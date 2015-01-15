@@ -1,11 +1,11 @@
 /*
  *    Part of AMORDAD software
  *
- *    Copyright (C) 2014 University of Southern California and
+ *    Copyright (C) 2015 University of Southern California and
  *                       Andrew D. Smith
- *                       Ehsan Behnam
+ *                       Wenzheng Li
  *
- *    Authors: Andrew D. Smith and Ehsan Behnav
+ *    Authors: Andrew D. Smith and Wenzheng Li
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -60,9 +60,13 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
                 const unordered_map<string, LSHTab> &hts,
                 RegularNearestNeighborGraph &g) {
 
-  // iterate over replacing hash tables
+  // iterate over each replaced hash functions
   for(unordered_map<string, LSHFun>::const_iterator i(replaced_hfs.begin());
       i != replaced_hfs.end(); ++i) {
+
+    //////////////////////////////////////////////////////////////////////////
+    ////COLLECT INFORMATION FROM THE RETIRED HASH TABLE AND UPDATE THE GRAPH//
+    //////////////////////////////////////////////////////////////////////////
 
     unordered_map<string, LSHTab>::const_iterator ht(hts.find(i->first));
     assert(ht != hts.end());
@@ -82,6 +86,30 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
         }
       }
     }
+
+    /////////////////////////////////////////////////////////////////////////
+    //GENERATE NEW HASH FUNCTION TO REPLACE THE RETIRED ONE ////////////////
+    ////////////////////////////////////////////////////////////////////////
+
+    // srand((rng_key != 0) ? rng_key : time(0) + getpid());
+    const string id = i->get_id();
+    const string feature_set_id = i->get_feature_set_id();
+    const size_t n_features = fvs.begin()->second.size();
+    const size_t n_bits = i->size();
+
+    const LSHAngleHashFunction hash_function(id, feature_set_id,
+                                             n_features, n_bits);
+
+    // POPULATE THE CORRESPONDING HASH TABLE
+    // ITERATE OVER EACH FEATURE VECTOR AND HASH IT
+    LSHAngleHashTable hash_table(hash_function.get_id());
+    for(unordered_map<string, FeatureVector>::const_iterator fv(fvs.begin());
+        fv != fvs.end(); ++fv) 
+      hash_table.insert(fv->second, hash_function(fv));
+    
+    // replaced by the new hash function and table 
+    i->second = hash_function;
+    ht->second = hash_table;
   }
 }
 
@@ -171,7 +199,8 @@ main(int argc, const char **argv) {
 
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "batch refresh an amordad "
-                           "database residing on disk",
+                           "database residing on disk "
+                           "updated files will be named with .up",
                            "<config-file>");
     opt_parse.add_opt("hfuncs", 'n', "number of hash functions to replace",
                       false, n_hfunc);
@@ -238,22 +267,22 @@ main(int argc, const char **argv) {
     ////// READING THE HASH FUNCTIONS //////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    // loading hash functions
-    unordered_map<string, lshfun> hf_lookup;
-    for (size_t i = 0; i < hash_function_files.size(); ++i) {
+    // only load replaced hash functions from file which acts like a FIFO
+    unordered_map<string, lshfun> rep_hf_lookup;
+    for (size_t i = 0; i < n_hfunc; ++i) {
       std::ifstream hf_in(hash_function_files[i].c_str());
       if (!hf_in)
         throw smithlabexception("bad hash function file: " +
                                 hash_function_files[i]);
       lshfun hf;
       hf_in >> hf;
-      hf_lookup[hf.get_id()] = hf;
+      rep_hf_lookup[hf.get_id()] = hf;
       if (VERBOSE)
         cerr << '\r' << "load hash functions: "
              << percent(i, hash_function_files.size()) << "%\r";
     }
     if (VERBOSE)
-      cerr << "load hash functions: 100% (" << hf_lookup.size() << ")" << endl;
+      cerr << "load hash functions: 100% (" << rep_hf_lookup.size() << ")" << endl;
 
     ////////////////////////////////////////////////////////////////////////
     ////// READING THE HASH TABLES /////////////////////////////////////////
@@ -284,7 +313,7 @@ main(int argc, const char **argv) {
     ///// STARTING THE REFRESH PROCESS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    execute_refresh(fv_lookup, replaced_hf_lookup, ht_lookup, nng);
+    execute_refresh(fv_lookup, rep_hf_lookup, ht_lookup, nng);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -301,8 +330,6 @@ main(int argc, const char **argv) {
       out << endl;
     }
 
-    if (VERBOSE)
-      cerr << comparisons << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
