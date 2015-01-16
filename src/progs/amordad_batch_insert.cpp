@@ -115,7 +115,7 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
   /// TEST WHETHER QUERY IS ALREADY IN GRAPH
   /// IF NOT ADD QUERY AS A NEW VERTEX
   if (!g.add_vertex_if_new(query.get_id()))
-    return false;
+    throw SMITHLABException("cannot insert existing node: " + query.get_id());
 
   /// INSERT QUERY INTO THE FEATURE VECTOR MAP
   fvs[query.get_id()] = query;
@@ -298,8 +298,9 @@ main(int argc, const char **argv) {
 
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "batch insertion an amordad "
-                           "database residing on disk",
-                           "<config-file> <insertion-dir> <outfile>");
+                           "database residing on disk "
+                           "and add '.up' to all updated file names",
+                           "<config-file> <insertion-dir>");
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
@@ -316,7 +317,7 @@ main(int argc, const char **argv) {
       cerr << opt_parse.option_missing_message() << endl;
       return EXIT_SUCCESS;
     }
-    if (leftover_args.size() != 3) {
+    if (leftover_args.size() != 2) {
       cerr << opt_parse.help_message() << endl;
       return EXIT_SUCCESS;
     }
@@ -395,6 +396,7 @@ main(int argc, const char **argv) {
     ////////////////////////////////////////////////////////////////////////
 
     unordered_map<string, LSHTab> ht_lookup;
+    unordered_map<string, string> id_to_path_ht;
     for (size_t i = 0; i < hash_table_files.size(); ++i) {
       std::ifstream ht_in(hash_table_files[i].c_str());
       if (!ht_in)
@@ -403,6 +405,7 @@ main(int argc, const char **argv) {
       LSHTab ht;
       ht_in >> ht;
       ht_lookup[ht.get_id()] = ht;
+      id_to_path_ht[ht.get_id()] = hash_table_files[i];
       if (VERBOSE)
         cerr << '\r' << "load hash tables: "
              << percent(i, hash_table_files.size()) << "%\r";
@@ -447,12 +450,8 @@ main(int argc, const char **argv) {
            << "[edges=" << nng.get_edge_count() << "]"
            << "[max_degree=" << nng.get_maximum_degree() << "]" << endl;
 
-    std::ofstream of;
-    if (!outfile.empty()) of.open(outfile.c_str());
-    if (!of) throw SMITHLABException("cannot write to file: " + outfile);
-    std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
-    
-    out << nng << endl;
+    std::ofstream of_g((strip_path(graph_file) + ".up").c_str());
+    of_g << nng << endl;
     if (VERBOSE)
       cerr << "writing graph back: 100%" << endl;
 
@@ -460,7 +459,8 @@ main(int argc, const char **argv) {
     size_t count = 0;
     for (unordered_map<string,LSHTab>::const_iterator i(ht_lookup.begin());
          i != ht_lookup.end(); ++i) {
-      std::ofstream of_ht((i->first + ".up").c_str());
+      string path = id_to_path_ht[i->second.get_id()];
+      std::ofstream of_ht((strip_path(path) + ".up").c_str());
       of_ht << i->second << endl;
 
       count++;
@@ -471,21 +471,6 @@ main(int argc, const char **argv) {
     if (VERBOSE)
       cerr << '\r' << "writing hashtables back: 100% ("
            << ht_lookup.size() << ")" << endl;
-
-    // writing fv_paths_file back 
-    vector<string> fv_files, insertion_files;
-    get_filenames(fv_paths_file, fv_files);
-    get_filenames(insertions_file, insertion_files);
-    std::ofstream of_fvs((basename(fv_paths_file) + ".up").c_str());
-    for (size_t i = 0; i < fv_files.size(); ++i)
-      of_fvs << fv_files[i] << endl;
-
-    for (size_t i = 0; i < insertion_files.size(); ++i)
-      of_fvs << insertion_files[i] << endl;
-
-    if (VERBOSE)
-      cerr << '\r' << "writing fv paths file back: 100%"
-           << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
