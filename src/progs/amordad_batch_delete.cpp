@@ -3,9 +3,9 @@
  *
  *    Copyright (C) 2014 University of Southern California and
  *                       Andrew D. Smith
- *                       Ehsan Behnam
+ *                       Wenzheng Li
  *
- *    Authors: Andrew D. Smith and Ehsan Behnam
+ *    Authors: Andrew D. Smith and Wenzheng Li
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include <tr1/unordered_set>
 #include <cstdio>
 #include <iterator>
-#include <queue>
+#include <fstream>
 
 #include "OptionParser.hpp"
 #include "smithlab_utils.hpp"
@@ -57,11 +57,11 @@ size_t comparisons = 0;
 
 static void
 execute_deletion(unordered_map<string, FeatureVector> &fvs,
-                  const unordered_map<string, LSHFun> &hfs,
-                  const FeatureVector &query,
-                  const size_t n_neighbors,
-                  unordered_map<string, LSHTab> &hts,
-                  RegularNearestNeighborGraph &g) {
+                 const unordered_map<string, LSHFun> &hfs,
+                 const FeatureVector &query,
+                 const size_t n_neighbors,
+                 unordered_map<string, LSHTab> &hts,
+                 RegularNearestNeighborGraph &g) {
   
   
   // iterate over hash tables
@@ -197,8 +197,9 @@ main(int argc, const char **argv) {
 
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "batch deletion an amordad "
-                           "database residing on disk",
-                           "<config-file> <deletion-dir> <outfile>");
+                           "database residing on disk "
+                           "and add '.up' to all updated file names",
+                           "<config-file> <deletion-dir>");
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
@@ -215,13 +216,12 @@ main(int argc, const char **argv) {
       cerr << opt_parse.option_missing_message() << endl;
       return EXIT_SUCCESS;
     }
-    if (leftover_args.size() != 3) {
+    if (leftover_args.size() != 2) {
       cerr << opt_parse.help_message() << endl;
       return EXIT_SUCCESS;
     }
     const string database_config_file(leftover_args.front());
-    const string deletions_file(leftover_args[1]);
-    const string outfile(leftover_args.back());
+    const string deletions_file(leftover_args.back());
     /****************** END COMMAND LINE OPTIONS *****************/
     
     if (!validate_file(deletions_file, 'r'))
@@ -294,6 +294,7 @@ main(int argc, const char **argv) {
     ////////////////////////////////////////////////////////////////////////
 
     unordered_map<string, LSHTab> ht_lookup;
+    unordered_map<string, string> id_to_path_ht;
     for (size_t i = 0; i < hash_table_files.size(); ++i) {
       std::ifstream ht_in(hash_table_files[i].c_str());
       if (!ht_in)
@@ -302,6 +303,7 @@ main(int argc, const char **argv) {
       LSHTab ht;
       ht_in >> ht;
       ht_lookup[ht.get_id()] = ht;
+      id_to_path_ht[ht.get_id()] = hash_table_files[i];
       if (VERBOSE)
         cerr << '\r' << "load hash tables: "
              << percent(i, hash_table_files.size()) << "%\r";
@@ -338,7 +340,7 @@ main(int argc, const char **argv) {
     ////////////////////////////////////////////////////////////////////////
 
 
-    // writing graph back to the outfile
+    // writing graph back to the disk
     if (VERBOSE)
       cerr << "UPDATED GRAPH: "
            << "[name=" << nng.get_graph_name() << "]"
@@ -346,12 +348,8 @@ main(int argc, const char **argv) {
            << "[edges=" << nng.get_edge_count() << "]"
            << "[max_degree=" << nng.get_maximum_degree() << "]" << endl;
 
-    std::ofstream of;
-    if (!outfile.empty()) of.open(outfile.c_str());
-    if (!of) throw SMITHLABException("cannot write to file: " + outfile);
-    std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
-    
-    out << nng << endl;
+    std::ofstream of_g((strip_path(graph_file) + ".up").c_str());
+    of_g << nng << endl;
     if (VERBOSE)
       cerr << "writing graph back: 100%" << endl;
 
@@ -359,7 +357,8 @@ main(int argc, const char **argv) {
     size_t count = 0;
     for (unordered_map<string,LSHTab>::const_iterator i(ht_lookup.begin());
          i != ht_lookup.end(); ++i) {
-      std::ofstream of_ht((i->first + ".up").c_str());
+      string path = id_to_path_ht[i->second.get_id()];
+      std::ofstream of_ht((strip_path(path) + ".up").c_str());
       of_ht << i->second << endl;
 
       count++;
@@ -369,32 +368,7 @@ main(int argc, const char **argv) {
     }
     if (VERBOSE)
       cerr << '\r' << "writing hashtables back: 100% ("
-           << ht_lookup.size() << ")" << endl;
-
-    // writing fv_paths_file back 
-    // TODO: this part is copied from insertion, need to change
-    // into deletion
-    vector<string> fv_files, deletion_files;
-    get_filenames(fv_paths_file, fv_files);
-    get_filenames(deletions_file, deletion_files);
-
-    if (VERBOSE) {
-      cerr << "database size: " << fv_files.size() << endl;
-      cerr << "number of deletions: " << deletion_files.size() << endl;
-    }
-
-    std::ofstream of_fvs((basename(fv_paths_file) + ".up").c_str());
-
-    for (size_t i = 0; i < deletion_files.size(); ++i)
-      fv_files.erase(std::find(fv_files.begin(), fv_files.end(), 
-                               deletion_files[i]));
-
-    for (size_t i = 0; i < fv_files.size(); ++i)
-      of_fvs << fv_files[i] << endl;
-
-    if (VERBOSE)
-      cerr << '\r' << "writing fv paths file back: 100%"
-           << endl;
+        << ht_lookup.size() << ")" << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
