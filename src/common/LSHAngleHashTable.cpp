@@ -64,8 +64,8 @@ LSHAngleHashTable::remove(const FeatureVector &fv, const size_t hash_key) {
   else {
     // locate fv in the hashed bucket
     vector<string>::iterator pos = std::find(x->second.begin(),
-                                        x->second.end(),
-                                        fv.get_id());
+                                             x->second.end(),
+                                             fv.get_id());
     if (pos == x->second.end()) 
       throw SMITHLABException("attempt to remove unknown point: " 
                               + fv.get_id());
