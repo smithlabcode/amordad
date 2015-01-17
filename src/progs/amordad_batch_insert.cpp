@@ -115,7 +115,8 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
   /// TEST WHETHER QUERY IS ALREADY IN GRAPH
   /// IF NOT ADD QUERY AS A NEW VERTEX
   if (!g.add_vertex_if_new(query.get_id()))
-    throw SMITHLABException("cannot insert existing node: " + query.get_id());
+    if(g.get_out_degree(query.get_id()) != 0)
+      throw SMITHLABException("cannot insert existing node: " + query.get_id());
 
   /// INSERT QUERY INTO THE FEATURE VECTOR MAP
   fvs[query.get_id()] = query;
