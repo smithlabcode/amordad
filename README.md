@@ -80,3 +80,17 @@ A cron job downloads the xml every 24 hours and parses it. The parsed XML provid
 The metadata also has a [field](http://www.ncbi.nlm.nih.gov/geo/info/qqtutorial.html) indicating the date of update and
 it should thus be possible to capture the changes in already downloaded datasets too.
 
+
+## More about GEO Profiles
+
+For obtaining profile neighbors, they have pre-calculated pairwise
+pearson correlations. So any query like this:
+http://www.ncbi.nlm.nih.gov/geoprofiles?LinkName=geoprofiles_geoprofiles_prof&from_uid=33741191
+randomly throws up top 200 hits(arbitrarily). The thresholds are arbitrary too.
+
+There is something called ‘Chromosome neighbors’ too which outputs the
+20 ‘physically’ close genes for the query gene in the same dataset.
+E.g. http://www.ncbi.nlm.nih.gov/geoprofiles?LinkName=geoprofiles_geoprofiles_chr&from_uid=33741191
+
+Then there are ‘Sequence Neighbors’ that simply gives link to all
+similar datasets, taking sequence simiairty into account.
