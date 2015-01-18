@@ -42,6 +42,34 @@ expression profiles as derived from GEO datasets. They can be queried programmat
 GEO profiles can be used to query nearest neighbors based on 
 profile expression([example](http://www.ncbi.nlm.nih.gov/geoprofiles?LinkName=geoprofiles_geoprofiles_prof&from_uid=112040738) and can be used to find ‘related data’.
 
+ Any query returns individual gene expressions. A
+ ‘“smoking cancer”’ query will return all those gene expression studies
+ that have “smoking cancer” annotation appearing somewhere. The ‘nearest profile neighbors’
+ returns nearest neighbors based on precalculated pearson correlations. These correlations 
+ are calculated for samples coming from the SAME dataset. Thus two independent datasets will
+ never show up as nearest neighbors, even if the nature of experiment was similar.
+ 
+ In short, ‘Profile neighbors’ is “within” the dataset.
+ ‘Sequence neighbors’ are “across” the dataset
+
+
+## MG-RAST
+MG-RAST now has an API available: http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1004008
+
+
+The raw and processed sequences are stored on their servers.. Can be retrieved easily too:
+https://github.com/MG-RAST/MG-RAST-Tools/blob/master/examples/python/download_metagenome_sequences.py
+(The script is broken right now, I submitted a PR for that)
+
+
+## KBase.us
+
+Looks promising, though I have not played around with it; 
+especcialy interesting: ‘Test microbial ecological hypotheses through taxonomic and functional
+analysis of quality-assessed metagenomic data’
+
+They have an API too: http://kbase.us/developer-zone/services
+
 
 ## Periodically querying new data
 
