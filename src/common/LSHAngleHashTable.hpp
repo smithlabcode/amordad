@@ -54,6 +54,7 @@ public:
   
   // Mutators
   void insert(const FeatureVector &fv, const size_t hash_value);
+  void remove(const FeatureVector &fv, const size_t hash_value);
   
 private:
   std::string id;

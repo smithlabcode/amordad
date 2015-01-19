@@ -80,8 +80,7 @@ RegularNearestNeighborGraph::update_vertex(const nng_vertex &u,
   graph_traits<internal_graph>::edge_descriptor the_edge;
   boost::tie(the_edge, already_exists) = boost::edge(u, v, the_graph);
   if (already_exists)
-    throw SMITHLABException("attempt to add existing edge: " + 
-                            smithlab::toa(u) + " " + smithlab::toa(v));
+    return false;
   
   if (boost::out_degree(u, the_graph) < maximum_degree) {
     add_edge(u, v, w);
@@ -169,6 +168,69 @@ RegularNearestNeighborGraph::add_vertex_if_new(const string &id) {
     return true;
   }
   else return false;  
+}
+
+
+size_t
+RegularNearestNeighborGraph::get_out_degree(const nng_vertex &u) {
+  return boost::out_degree(u, the_graph);
+}
+
+
+size_t
+RegularNearestNeighborGraph::get_out_degree(const std::string &id) {
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(id));
+  if (u_idx == name_to_index.end())
+    throw SMITHLABException("attempt to get degree from unknown vertex: "+ id);
+  else
+    return get_out_degree(u_idx->second);
+}
+
+
+void
+RegularNearestNeighborGraph::remove_out_edges(const nng_vertex &u) {
+  boost::clear_out_edges(u, the_graph);
+}
+
+
+void
+RegularNearestNeighborGraph::remove_out_edges(const string &u) {
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(u));
+  if (u_idx == name_to_index.end())
+    throw SMITHLABException("attempt to remove edges from unknown vertex: "+ u);
+  else
+    remove_out_edges(u_idx->second);
+}
+
+
+void
+RegularNearestNeighborGraph::remove_edge(const nng_vertex &u, 
+                                         const nng_vertex &v) {
+  
+  // check to see if edge exists
+  bool already_exists;
+  graph_traits<internal_graph>::edge_descriptor the_edge;
+  boost::tie(the_edge, already_exists) = boost::edge(u, v, the_graph);
+  if (!already_exists)
+    throw SMITHLABException("attempt to remove non-existing edge: " + 
+        smithlab::toa(u) + " " + smithlab::toa(v));
+  boost::remove_edge(u, v, the_graph);
+}
+
+
+void 
+RegularNearestNeighborGraph::remove_edge(const string &u, 
+                                         const string &v) {
+
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(u));
+  if (u_idx == name_to_index.end())
+    throw SMITHLABException("cannot remove edge from unknown vertex: " + u);
+
+  unordered_map<string, size_t>::const_iterator v_idx(name_to_index.find(v));
+  if (v_idx == name_to_index.end())
+    throw SMITHLABException("cannot remove edge to unknown vertex: " + v);
+
+  remove_edge(u_idx->second, v_idx->second);
 }
 
 

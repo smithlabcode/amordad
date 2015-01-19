@@ -37,7 +37,6 @@ using std::string;
 using std::pair;
 using std::make_pair;
 
-
 size_t
 LSHAngleHashTable::max_bucket_load() const {
   size_t max_load = 0;
@@ -56,6 +55,24 @@ LSHAngleHashTable::insert(const FeatureVector &fv, const size_t hash_key) {
     x->second.push_back(fv.get_id());
 }
 
+void
+LSHAngleHashTable::remove(const FeatureVector &fv, const size_t hash_key) {
+  const BucketMap::iterator x(buckets.find(hash_key));
+  if (x == buckets.end())
+    throw SMITHLABException("attempt to remove from unkonwn hash key: " 
+                            + toa(hash_key));
+  else {
+    // locate fv in the hashed bucket
+    vector<string>::iterator pos = std::find(x->second.begin(),
+                                             x->second.end(),
+                                             fv.get_id());
+    if (pos == x->second.end()) 
+      throw SMITHLABException("attempt to remove unknown point: " 
+                              + fv.get_id());
+    else 
+      x->second.erase(pos);
+  }
+}
 
 string
 LSHAngleHashTable::tostring() const {

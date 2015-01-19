@@ -3,9 +3,9 @@
  *
  *    Copyright (C) 2014 University of Southern California and
  *                       Andrew D. Smith
- *                       Ehsan Behnam
+ *                       Wenzheng Li
  *
- *    Authors: Andrew D. Smith and Ehsan Behnam
+ *    Authors: Andrew D. Smith and Wenzheng Li
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include <tr1/unordered_set>
 #include <cstdio>
 #include <iterator>
-#include <queue>
+#include <fstream>
 
 #include "OptionParser.hpp"
 #include "smithlab_utils.hpp"
@@ -55,73 +55,14 @@ typedef LSHAngleHashFunction LSHFun;
 
 size_t comparisons = 0;
 
-struct Result {
-  Result(const string &i, const double v) : id(i), val(v) {}
-  Result() : val(std::numeric_limits<double>::max()) {}
-  bool operator<(const Result &other) const {return val < other.val;}
-  string id;
-  double val;
-};
-
-
-std::ostream &
-operator<<(std::ostream &os, const Result &r) {
-  return os << r.id << '\t' << r.val;
-}
-
-
 static void
-evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
-                    const FeatureVector &query,
-                    const size_t n_neighbors,
-                    const unordered_set<string> &candidates,
-                    vector<Result> &results) {
+execute_deletion(unordered_map<string, FeatureVector> &fvs,
+                 const unordered_map<string, LSHFun> &hfs,
+                 const FeatureVector &query,
+                 const size_t n_neighbors,
+                 unordered_map<string, LSHTab> &hts,
+                 RegularNearestNeighborGraph &g) {
   
-  std::priority_queue<Result, vector<Result>, std::less<Result> > pq;
-  double current_dist_cutoff = std::numeric_limits<double>::max();
-  for (unordered_set<string>::const_iterator i(candidates.begin());
-       i != candidates.end(); ++i) {
-    const FeatureVector fv(fvs.find(*i)->second);
-    const double dist = query.compute_angle(fv);
-    ++comparisons;
-    if (dist < current_dist_cutoff) {
-      if (pq.size() == n_neighbors) 
-        pq.pop();
-      pq.push(Result(*i, dist));
-
-      if(pq.size() == n_neighbors)
-        current_dist_cutoff = pq.top().val;
-    }
-  }
-
-  results.clear();
-  while (!pq.empty()) {
-    results.push_back(pq.top());
-    pq.pop();
-  }
-  reverse(results.begin(), results.end());
-}
-
-
-
-static bool
-execute_insertion(unordered_map<string, FeatureVector> &fvs,
-                  const unordered_map<string, LSHFun> &hfs,
-                  const FeatureVector &query,
-                  const size_t n_neighbors,
-                  unordered_map<string, LSHTab> &hts,
-                  RegularNearestNeighborGraph &g) {
-  
-  /// TEST WHETHER QUERY IS ALREADY IN GRAPH
-  /// IF NOT ADD QUERY AS A NEW VERTEX
-  if (!g.add_vertex_if_new(query.get_id()))
-    if(g.get_out_degree(query.get_id()) != 0)
-      throw SMITHLABException("cannot insert existing node: " + query.get_id());
-
-  /// INSERT QUERY INTO THE FEATURE VECTOR MAP
-  fvs[query.get_id()] = query;
-
-  unordered_set<string> candidates;
   
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::iterator i(hts.begin());
@@ -136,58 +77,18 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
     unordered_map<size_t, vector<string> >::const_iterator
       bucket = i->second.find(bucket_number);
 
+    // delete the query from each hash table
     if (bucket != i->second.end())
-      candidates.insert(bucket->second.begin(), bucket->second.end());
-    
-    // INSERT THE QUERY INTO EACH HASH TABLE
-    i->second.insert(query, bucket_number);
+      i->second.remove(query, bucket_number);
   }
 
-  // gather neighbors of candidates
-  unordered_set<string> candidates_from_graph;
-  for (unordered_set<string>::const_iterator i(candidates.begin());
-       i != candidates.end(); ++i) {
-    vector<string> neighbors;
-    vector<double> neighbor_dists;
-    g.get_neighbors(*i, neighbors, neighbor_dists);
+  /// FOLLOW A LAZY DELETION STRATEGY
+  /// ONLY OUTGOING EDGES OF THE VERTEX ARE DELETED
+  // delete the outgoing edges of query from the graph
+  g.remove_out_edges(query.get_id());
 
-    /*
-     * check each neighbor to see whether it was deleted before by checking
-     * whether its out degree is zero. We need to remove those previously
-     * deleted vertice from the neighbors and also delete the edge between
-     * the candidate and the deleted vertex
-     */
-    
-    vector<string> deleted_nodes;
-    for (vector<string>::iterator j(neighbors.begin());
-         j != neighbors.end(); ++j) {
-
-      if (g.get_out_degree(*j) == 0) {
-        deleted_nodes.push_back(*j);
-        g.remove_edge(*i, *j);
-        // TODO: check whether the deleted node has no in edges, if yes,
-        // remove the node from the graph
-      }
-    }
-    for (vector<string>::const_iterator j(deleted_nodes.begin());
-         j != deleted_nodes.end(); ++j)
-      neighbors.erase(std::find(neighbors.begin(), neighbors.end(), *j ));
-
-    candidates_from_graph.insert(neighbors.begin(), neighbors.end());
-  }
-
-  candidates.insert(candidates_from_graph.begin(), candidates_from_graph.end());
-
-  vector<Result> neighbors;
-  evaluate_candidates(fvs, query, n_neighbors, candidates, neighbors);
-  
-  // CONNECT THE QUERY TO EACH OF THE "RESULT" NEIGHBORS
-  // IN THE GRAPH
-  for (vector<Result>::const_iterator i(neighbors.begin());
-       i != neighbors.end(); ++i)
-    g.update_vertex(query.get_id(), i->id, i->val);
-
-  return true;
+  // delete the query from the feature vectors map
+  fvs.erase(query.get_id());
 }
 
 
@@ -229,22 +130,19 @@ get_filenames(const string &path_file, vector<string> &file_names) {
 }
 
 
-/*
- * See what is inside insertion_dir and loads all the insertions
- */
 static void
-get_insertions(const string &insertions_file, vector<FeatureVector> &insertions) {
+get_deletions(const string &deletions_file, vector<FeatureVector> &deletions) {
 
-  vector<string> insertion_files;
-  get_filenames(insertions_file, insertion_files);
+  vector<string> deletion_files;
+  get_filenames(deletions_file, deletion_files);
 
-  for(size_t i = 0; i < insertion_files.size(); ++i) {
+  for(size_t i = 0; i < deletion_files.size(); ++i) {
     FeatureVector fv;
-    std::ifstream in(insertion_files[i].c_str());
+    std::ifstream in(deletion_files[i].c_str());
     if (!in)
-      throw SMITHLABException("bad feature vector file: " + insertion_files[i]);
+      throw SMITHLABException("bad feature vector file: " + deletion_files[i]);
     in >> fv;
-    insertions.push_back(fv);
+    deletions.push_back(fv);
   }
 }
 
@@ -298,10 +196,10 @@ main(int argc, const char **argv) {
     bool VERBOSE = false;
 
     /****************** COMMAND LINE OPTIONS ********************/
-    OptionParser opt_parse(strip_path(argv[0]), "batch insertion an amordad "
+    OptionParser opt_parse(strip_path(argv[0]), "batch deletion an amordad "
                            "database residing on disk "
                            "and add '.up' to all updated file names",
-                           "<config-file> <insertion-dir>");
+                           "<config-file> <deletion-dir>");
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
@@ -323,12 +221,11 @@ main(int argc, const char **argv) {
       return EXIT_SUCCESS;
     }
     const string database_config_file(leftover_args.front());
-    const string insertions_file(leftover_args[1]);
-    const string outfile(leftover_args.back());
+    const string deletions_file(leftover_args.back());
     /****************** END COMMAND LINE OPTIONS *****************/
     
-    if (!validate_file(insertions_file, 'r'))
-      throw SMITHLABException("bad insertions file: " + insertions_file);
+    if (!validate_file(deletions_file, 'r'))
+      throw SMITHLABException("bad deletions file: " + deletions_file);
     
     ////////////////////////////////////////////////////////////////////////
     ////// READING HASH {FUNCTIONS, TABLES, FEATURE_VECTOR} FILES //////////////
@@ -418,32 +315,32 @@ main(int argc, const char **argv) {
       cerr << "database loaded" << endl;
 
     ////////////////////////////////////////////////////////////////////////
-    ///// STARTING THE INSERTION PROCESS ///////////////////////////////////
+    ///// STARTING THE DELETIONS PROCESS ///////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    // reading insertions
-    vector<FeatureVector> insertions;
-    get_insertions(insertions_file, insertions);
+    // reading deletions
+    vector<FeatureVector> deletions;
+    get_deletions(deletions_file, deletions);
     if (VERBOSE)
-      cerr << "number of insertions: " << insertions.size() << endl;
+      cerr << "number of deletions: " << deletions.size() << endl;
 
-    for (size_t i = 0; i < insertions.size(); ++i) {
-      execute_insertion(fv_lookup, hf_lookup, insertions[i], n_neighbors,
+    for (size_t i = 0; i < deletions.size(); ++i) {
+      execute_deletion(fv_lookup, hf_lookup, deletions[i], n_neighbors,
                         ht_lookup, nng);
       if (VERBOSE)
-        cerr << '\r' << "processing insertions: "
-             << percent(i, insertions.size()) << "%\r";
+        cerr << '\r' << "processing deletions: "
+             << percent(i, deletions.size()) << "%\r";
     }
     if (VERBOSE)
-      cerr << '\r' << "processing insertions: 100% ("
-           << insertions.size() << ")" << endl;
+      cerr << '\r' << "processing deletions: 100% ("
+           << deletions.size() << ")" << endl;
     
     ////////////////////////////////////////////////////////////////////////
     ///// NOW WRITE THE DATABASE BACK TO DISK //////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
 
-    // writing graph back to the outfile
+    // writing graph back to the disk
     if (VERBOSE)
       cerr << "UPDATED GRAPH: "
            << "[name=" << nng.get_graph_name() << "]"
@@ -471,7 +368,7 @@ main(int argc, const char **argv) {
     }
     if (VERBOSE)
       cerr << '\r' << "writing hashtables back: 100% ("
-           << ht_lookup.size() << ")" << endl;
+        << ht_lookup.size() << ")" << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;

@@ -70,65 +70,6 @@ operator<<(std::ostream &os, const Result &r) {
 }
 
 
-// static void
-// get_feature_vector(const string &id,
-//                    const unordered_map<string, string> &fv_path_lookup,
-//                    FeatureVector &fv) {
-//   unordered_map<string, string>::const_iterator i(fv_path_lookup.find(id));
-//   if (i == fv_path_lookup.end())
-//     throw SMITHLABException("cannot find file for: " + id);
-
-//   std::ifstream in(i->second.c_str());
-//   if (!in)
-//     throw SMITHLABException("bad feature vector file: " + i->second);
-//   in >> fv;
-// }
-
-// static void
-// get_feature_vector_paths_lookup(const string &fv_paths_file,
-//                                 unordered_map<string, string> &fv_paths_lookup) {
-//   std::ifstream in(fv_paths_file.c_str());
-//   if (!in)
-//     throw SMITHLABException("bad feature vector paths file: " + fv_paths_file);
-
-//   string fv_id, fv_path;
-//   while (in >> fv_id >> fv_path)
-//     fv_paths_lookup[fv_id] = fv_path;
-// }
-
-// static void
-// evaluate_candidates(const unordered_map<string, string>& fv_file_lookup,
-//                     const FeatureVector &query,
-//                     const size_t n_neighbors,
-//                     const double max_proximity_radius,
-//                     const unordered_set<string> &candidates,
-//                     vector<Result> &results) {
-
-//   std::priority_queue<Result, vector<Result>, std::greater<Result> > pq;
-//   double current_dist_cutoff = max_proximity_radius;
-//   for (unordered_set<string>::const_iterator i(candidates.begin());
-//        i != candidates.end(); ++i) {
-//     FeatureVector fv;
-//     get_feature_vector(*i, fv_file_lookup, fv);
-//     const double dist = query.compute_angle(fv);
-//     if (dist < current_dist_cutoff) {
-//       if (pq.size() == n_neighbors) {
-//         pq.pop();
-//         current_dist_cutoff = dist;
-//       }
-//       pq.push(Result(*i, dist));
-//     }
-//   }
-
-//   results.clear();
-//   while (!pq.empty()) {
-//     results.push_back(pq.top());
-//     pq.pop();
-//   }
-//   reverse(results.begin(), results.end());
-// }
-
-
 static void
 evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
                     const FeatureVector &query,
@@ -163,12 +104,11 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
 }
 
 
-
 static void
 execute_query(const unordered_map<string, FeatureVector> &fvs,
               const unordered_map<string, LSHFun> &hfs,
               const unordered_map<string, LSHTab> &hts,
-              const RegularNearestNeighborGraph &g,
+              RegularNearestNeighborGraph &g,
               const FeatureVector &query,
               const size_t n_neighbors,
               const double max_proximity_radius,
@@ -200,13 +140,34 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
     vector<string> neighbors;
     vector<double> neighbor_dists;
     g.get_neighbors(*i, neighbors, neighbor_dists);
+
+    /*
+     * check each neighbor to see whether it was deleted before by checking
+     * whether its out degree is zero. We need to remove those previously
+     * deleted vertice from the neighbors and also delete the edge between
+     * the candidate and the deleted vertex
+     */
+    
+    vector<string> deleted_nodes;
+    for (vector<string>::iterator j(neighbors.begin());
+         j != neighbors.end(); ++j) {
+
+      if (g.get_out_degree(*j) == 0) {
+        deleted_nodes.push_back(*j);
+        g.remove_edge(*i, *j);
+        // TODO: check whether the deleted node has no in edges, if yes,
+        // remove the node from the graph
+      }
+    }
+    for (vector<string>::const_iterator j(deleted_nodes.begin());
+         j != deleted_nodes.end(); ++j)
+      neighbors.erase(std::find(neighbors.begin(), neighbors.end(), *j ));
+
     candidates_from_graph.insert(neighbors.begin(), neighbors.end());
   }
 
   candidates.insert(candidates_from_graph.begin(), candidates_from_graph.end());
 
-  // evaluate_candidates(fv_files_lookup, query, n_neighbors,
-  //                     max_proximity_radius, candidates, results);
   evaluate_candidates(fvs, query, n_neighbors,
                       max_proximity_radius, candidates, results);
 }
