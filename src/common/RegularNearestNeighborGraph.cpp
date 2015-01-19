@@ -160,11 +160,16 @@ RegularNearestNeighborGraph::add_vertex(const string &id) {
 
 bool
 RegularNearestNeighborGraph::add_vertex_if_new(const string &id) {
-  if (name_to_index.find(id) == name_to_index.end()) {
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(id));
+  if (u_idx == name_to_index.end()) {
     const size_t index = boost::num_vertices(the_graph);
     name_to_index[id] = index;
     index_to_name[index] = id;
     boost::add_vertex(the_graph);
+    return true;
+  }
+  else if(indices_deleted.find(u_idx->second) != indices_deleted.end()) {
+    indices_deleted.erase(u_idx->second);
     return true;
   }
   else return false;  
@@ -193,6 +198,7 @@ RegularNearestNeighborGraph::was_deleted(const std::string &id) {
 void
 RegularNearestNeighborGraph::remove_vertex(const nng_vertex &u) {
   indices_deleted.insert(u);
+  boost::clear_out_edges(u, the_graph);
 }
 
 
@@ -203,38 +209,6 @@ RegularNearestNeighborGraph::remove_vertex(const std::string &id) {
     throw SMITHLABException("attempt to delete unknown vertex: "+ id);
   else
     remove_vertex(u_idx->second);
-}
-
-
-size_t
-RegularNearestNeighborGraph::get_out_degree(const nng_vertex &u) {
-  return boost::out_degree(u, the_graph);
-}
-
-
-size_t
-RegularNearestNeighborGraph::get_out_degree(const std::string &id) {
-  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(id));
-  if (u_idx == name_to_index.end())
-    throw SMITHLABException("attempt to get degree from unknown vertex: "+ id);
-  else
-    return get_out_degree(u_idx->second);
-}
-
-
-void
-RegularNearestNeighborGraph::remove_out_edges(const nng_vertex &u) {
-  boost::clear_out_edges(u, the_graph);
-}
-
-
-void
-RegularNearestNeighborGraph::remove_out_edges(const string &u) {
-  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(u));
-  if (u_idx == name_to_index.end())
-    throw SMITHLABException("attempt to remove edges from unknown vertex: "+ u);
-  else
-    remove_out_edges(u_idx->second);
 }
 
 
