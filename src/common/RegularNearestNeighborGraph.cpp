@@ -171,6 +171,41 @@ RegularNearestNeighborGraph::add_vertex_if_new(const string &id) {
 }
 
 
+bool
+RegularNearestNeighborGraph::was_deleted(const nng_vertex &u) {
+  if(indices_deleted.find(u) == indices_deleted.end())
+    return false;
+  else
+    return true;
+}
+
+
+bool
+RegularNearestNeighborGraph::was_deleted(const std::string &id) {
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(id));
+  if (u_idx == name_to_index.end())
+    throw SMITHLABException("no deletion status from unknown vertex: "+ id);
+  else
+    return was_deleted(u_idx->second);
+}
+ 
+
+void
+RegularNearestNeighborGraph::remove_vertex(const nng_vertex &u) {
+  indices_deleted.insert(u);
+}
+
+
+void
+RegularNearestNeighborGraph::remove_vertex(const std::string &id) {
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(id));
+  if (u_idx == name_to_index.end())
+    throw SMITHLABException("attempt to delete unknown vertex: "+ id);
+  else
+    remove_vertex(u_idx->second);
+}
+
+
 size_t
 RegularNearestNeighborGraph::get_out_degree(const nng_vertex &u) {
   return boost::out_degree(u, the_graph);
@@ -316,7 +351,8 @@ RegularNearestNeighborGraph::tostring() const{
   oss << "VERTEX";
   for(unordered_map<string, size_t>::const_iterator i(name_to_index.begin());
       i != name_to_index.end(); ++i)
-    oss << '\n' << i->first << '\t' << i->second;
+    if(indices_deleted.find(i->second) != indices_deleted.end())
+      oss << '\n' << i->first << '\t' << i->second;
   
   //writing edges
   oss << '\n'<< "EDGE";
@@ -324,7 +360,9 @@ RegularNearestNeighborGraph::tostring() const{
   for (boost::tie(e_i, e_j) = boost::edges(the_graph); e_i != e_j; ++e_i) {
     const nng_vertex u = boost::source(*e_i, the_graph);
     const nng_vertex v = boost::target(*e_i, the_graph);
-    oss << '\n' << u << '\t' << v << '\t' << get_distance(u, v);
+    if(indices_deleted.find(u) != indices_deleted.end()
+        && indices_deleted.find(v) != indices_deleted.end())
+      oss << '\n' << u << '\t' << v << '\t' << get_distance(u, v);
   }
   return oss.str();
 }

@@ -29,6 +29,7 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <tr1/unordered_map>
+#include <tr1/unordered_set>
 
 typedef 
 boost::adjacency_list<boost::setS, boost::vecS, 
@@ -64,6 +65,11 @@ public:
   void get_neighbors(const std::string &query,
                      std::vector<std::string> &neighbors,
                      std::vector<double> &distances) const;
+  bool was_deleted(const nng_vertex &u);
+  bool was_deleted(const std::string &id);
+
+  void remove_vertex(const nng_vertex &u);
+  void remove_vertex(const std::string &id);
 
   /* out degree */
   size_t get_out_degree(const nng_vertex &u);
@@ -96,6 +102,7 @@ private:
   internal_graph the_graph;
   std::tr1::unordered_map<std::string, size_t> name_to_index;
   std::tr1::unordered_map<size_t, std::string> index_to_name;
+  std::tr1::unordered_set<size_t> indices_deleted;
   size_t maximum_degree;
 
   // lookups
