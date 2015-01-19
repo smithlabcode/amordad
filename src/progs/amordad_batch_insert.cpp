@@ -115,8 +115,7 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
   /// TEST WHETHER QUERY IS ALREADY IN GRAPH
   /// IF NOT ADD QUERY AS A NEW VERTEX
   if (!g.add_vertex_if_new(query.get_id()))
-    if(g.get_out_degree(query.get_id()) != 0)
-      throw SMITHLABException("cannot insert existing node: " + query.get_id());
+    throw SMITHLABException("cannot insert existing node: " + query.get_id());
 
   /// INSERT QUERY INTO THE FEATURE VECTOR MAP
   fvs[query.get_id()] = query;
@@ -152,21 +151,18 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
     g.get_neighbors(*i, neighbors, neighbor_dists);
 
     /*
-     * check each neighbor to see whether it was deleted before by checking
-     * whether its out degree is zero. We need to remove those previously
-     * deleted vertice from the neighbors and also delete the edge between
-     * the candidate and the deleted vertex
+     * check each neighbor to see whether it was labeled as deleted before.
+     * We need to remove those previously deleted vertice from the neighbors
+     * and also delete the edge between the candidate and the deleted vertex
      */
-    
+
     vector<string> deleted_nodes;
     for (vector<string>::iterator j(neighbors.begin());
          j != neighbors.end(); ++j) {
 
-      if (g.get_out_degree(*j) == 0) {
+      if (g.was_deleted(*j)) {
         deleted_nodes.push_back(*j);
         g.remove_edge(*i, *j);
-        // TODO: check whether the deleted node has no in edges, if yes,
-        // remove the node from the graph
       }
     }
     for (vector<string>::const_iterator j(deleted_nodes.begin());

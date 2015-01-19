@@ -82,10 +82,7 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
       i->second.remove(query, bucket_number);
   }
 
-  /// FOLLOW A LAZY DELETION STRATEGY
-  /// ONLY OUTGOING EDGES OF THE VERTEX ARE DELETED
-  // delete the outgoing edges of query from the graph
-  g.remove_out_edges(query.get_id());
+  g.remove_vertex(query.get_id());
 
   // delete the query from the feature vectors map
   fvs.erase(query.get_id());
