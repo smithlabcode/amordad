@@ -65,8 +65,8 @@ public:
   void get_neighbors(const std::string &query,
                      std::vector<std::string> &neighbors,
                      std::vector<double> &distances) const;
-  bool was_deleted(const nng_vertex &u);
-  bool was_deleted(const std::string &id);
+  bool was_deleted(const nng_vertex &u) const;
+  bool was_deleted(const std::string &id) const;
 
   void remove_vertex(const nng_vertex &u);
   void remove_vertex(const std::string &id);

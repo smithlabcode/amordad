@@ -168,7 +168,7 @@ RegularNearestNeighborGraph::add_vertex_if_new(const string &id) {
     boost::add_vertex(the_graph);
     return true;
   }
-  else if(indices_deleted.find(u_idx->second) != indices_deleted.end()) {
+  else if(was_deleted(u_idx->second)) {
     indices_deleted.erase(u_idx->second);
     return true;
   }
@@ -177,7 +177,7 @@ RegularNearestNeighborGraph::add_vertex_if_new(const string &id) {
 
 
 bool
-RegularNearestNeighborGraph::was_deleted(const nng_vertex &u) {
+RegularNearestNeighborGraph::was_deleted(const nng_vertex &u) const {
   if(indices_deleted.find(u) == indices_deleted.end())
     return false;
   else
@@ -186,7 +186,7 @@ RegularNearestNeighborGraph::was_deleted(const nng_vertex &u) {
 
 
 bool
-RegularNearestNeighborGraph::was_deleted(const std::string &id) {
+RegularNearestNeighborGraph::was_deleted(const std::string &id) const {
   unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(id));
   if (u_idx == name_to_index.end())
     throw SMITHLABException("no deletion status from unknown vertex: "+ id);
@@ -321,12 +321,23 @@ RegularNearestNeighborGraph::tostring() const{
   oss << graph_name << '\n'
       << maximum_degree << '\n';
   
+  assert(name_to_index.size() == get_vertex_count());
+
+  //removing deleted vertices, mapping old index to new index
+  unordered_map<size_t, size_t> old_to_new_index;
+  size_t vertices_left = 0;
+  for(size_t i = 0; i < get_vertex_count(); i++)
+    if(!was_deleted(i)) {
+      old_to_new_index[i] = vertices_left;
+      vertices_left++;
+    }
+
   //writing id mapping:
   oss << "VERTEX";
   for(unordered_map<string, size_t>::const_iterator i(name_to_index.begin());
       i != name_to_index.end(); ++i)
-    if(indices_deleted.find(i->second) != indices_deleted.end())
-      oss << '\n' << i->first << '\t' << i->second;
+    if(!was_deleted(i->second))
+      oss << '\n' << i->first << '\t' << old_to_new_index[i->second];
   
   //writing edges
   oss << '\n'<< "EDGE";
@@ -334,9 +345,9 @@ RegularNearestNeighborGraph::tostring() const{
   for (boost::tie(e_i, e_j) = boost::edges(the_graph); e_i != e_j; ++e_i) {
     const nng_vertex u = boost::source(*e_i, the_graph);
     const nng_vertex v = boost::target(*e_i, the_graph);
-    if(indices_deleted.find(u) != indices_deleted.end()
-        && indices_deleted.find(v) != indices_deleted.end())
-      oss << '\n' << u << '\t' << v << '\t' << get_distance(u, v);
+    if(!was_deleted(u) && !was_deleted(v)) 
+      oss << '\n' << old_to_new_index[u] << '\t' << old_to_new_index[v] 
+          << '\t' << get_distance(u, v);
   }
   return oss.str();
 }
