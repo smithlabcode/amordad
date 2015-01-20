@@ -462,11 +462,11 @@ main(int argc, const char **argv) {
 
       count++;
       if (VERBOSE)
-        cerr << '\r' << "writing hashtables back: "
+        cerr << '\r' << "writing hash tables back: "
              << percent(count, ht_lookup.size()) << "%\r";
     }
     if (VERBOSE)
-      cerr << '\r' << "writing hashtables back: 100% ("
+      cerr << '\r' << "writing hash tables back: 100% ("
            << ht_lookup.size() << ")" << endl;
   }
   catch (const SMITHLABException &e) {
