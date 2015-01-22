@@ -21,6 +21,7 @@ PROGS = build_graph_naively naive_batch_query \
 				naive_batch_insert naive_batch_delete\
 	normalize_feature_vector normalize_features compute_normalizers \
 	generate_hash_function populate_hash_table build_graph \
+  generate_euclidean_hash_function \
 	amordad_batch_query \
 	amordad_batch_insert \
 	amordad_batch_delete \
@@ -67,6 +68,8 @@ endif
 all: $(PROGS)
 
 generate_hash_function : $(addprefix $(COMMON)/, LSHAngleHashFunction.o)
+
+generate_euclidean_hash_function : $(addprefix $(COMMON)/, LSHEuclideanHashFunction.o)
 
 populate_hash_table : $(addprefix $(COMMON)/, LSHAngleHashTable.o \
 	LSHAngleHashFunction.o)
