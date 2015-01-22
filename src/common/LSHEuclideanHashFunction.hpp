@@ -28,10 +28,11 @@
 
 class FeatureVector;
 
-struct EuclideanPara {
-  std::vector<double> random_vec;
-  double random_uniform;
-  double uniform_seed;
+struct Parameter {
+  // random vector a entries chosen from Guassian dist
+  std::vector<double> rand_vec;
+  // random value b chosen uniformly from [0,w]
+  double rand_uniform;
 };
 
 class LSHEuclideanHashFunction {
@@ -41,20 +42,23 @@ public:
                        const size_t n_features, const size_t n_bits,
                        const double w);
   LSHEuclideanHashFunction(const std::string &id_in, const std::string &fsi,
-                       const std::vector<EuclideanPara> &eps) :
-    id(id_in), feature_set_id(fsi), euclidean_paras(eps) {}
+                       const std::vector<Parameter> &ps,
+                       const double w) :
+    id(id_in), feature_set_id(fsi), parameters(ps), uniform_seed(w) {}
   
   size_t operator()(const FeatureVector &fv) const;
   
   std::string tostring() const;
-  size_t size() const {return euclidean_paras.size();};
+  size_t size() const {return parameters.size();};
   std::string get_id() const {return id;}
   std::string get_feature_set_id() const {return feature_set_id;}
   
 private:
   std::string id;
   std::string feature_set_id;
-  std::vector<EuclideanPara> euclidean_paras;
+  std::vector<Parameter> parameters;
+  // parameter w
+  double uniform_seed;
 };
 
 std::ostream&
