@@ -31,12 +31,22 @@
 
 #include "smithlab_utils.hpp"
 
-#include "LSHAngleHashFunction.hpp"
+#include "LSHEuclideanHashFunction.hpp"
 #include "FeatureVector.hpp"
 
 using std::string;
 using std::vector;
 using std::pair;
+
+
+static double
+get_uniform(const double start, const double end) {
+  assert(start <= end);
+  const double r = static_cast<double>((rand() % RAND_MAX)) / RAND_MAX;
+  const double u = start + ((end - start) * r);
+  assert(u >= start && u <= end);
+  return u;
+}
 
 
 static double
@@ -50,31 +60,29 @@ get_gaussian(const double mu, const double sd) {
 
 
 static void 
-generate_random_unit_vec(const size_t dim, vector<double> &v) {
-  //if x1, x2, ..., xn are normal(0, 1)
-  //then normalized (x1, x2, .., xn) is a random point on unit hypersphere.
-  double r = 0.0;
-  for (size_t i = 0; i < dim; ++i) {
-    const double n = get_gaussian(0.0, 1.0);
-    v[i] = n;
-    r += n*n;
-  }
-  for (vector<double>::iterator i = v.begin(); i != v.end(); ++i)
-    (*i) /= std::sqrt(r);
+generate_random_euclidean_para(const size_t dim, 
+                               const double w,
+                               EuclideanPara &ep) {
+  ep.random_vec.resize(dim, 0.0);
+  for (size_t i = 0; i < dim; ++i)
+    ep.random_vec[i] = get_gaussian(0.0, 1.0);
+
+  ep.random_uniform = get_uniform(0.0, w);
+  ep.uniform_seed = w;
 }
 
 
 // CONSTRUCTORS
-LSHAngleHashFunction::LSHAngleHashFunction(const string &id_in,
+LSHEuclideanHashFunction::LSHEuclideanHashFunction(const string &id_in,
                                            const string &fsi,
                                            const size_t n_features,
-                                           const size_t n_bits) :
+                                           const size_t n_bits,
+                                           const double w) :
   id(id_in), feature_set_id(fsi) {
-  // generate the hyperplanes
-  unit_vecs.resize(n_bits, vector<double>(n_features, 0.0));
+  euclidean_paras.resize(n_bits);
   for (size_t i = 0; i < n_bits; ++i) {
-    generate_random_unit_vec(n_features, unit_vecs[i]);
-    assert(unit_vecs[i].size() == n_features);
+    generate_random_euclidean_para(n_features, w, euclidean_paras[i]);
+    assert(euclidean_paras[i].random_vec.size() == n_features);
   }
 }
 
@@ -87,7 +95,7 @@ LSHAngleHashFunction::LSHAngleHashFunction(const string &id_in,
 
 // INPUT
 std::istream&
-operator>>(std::istream &in, LSHAngleHashFunction &hf) {
+operator>>(std::istream &in, LSHEuclideanHashFunction &hf) {
   
   // first read the id for this hash function
   string hf_id;
@@ -99,7 +107,7 @@ operator>>(std::istream &in, LSHAngleHashFunction &hf) {
   
   size_t n_dimensions = 0;
   
-  vector<vector<double> > uvs;
+  vector<EuclideanPara> euclidean_paras;
   string line;
   while (getline(in, line)) {
     
@@ -124,42 +132,48 @@ operator>>(std::istream &in, LSHAngleHashFunction &hf) {
     if (n_dimensions != current.size())
       throw SMITHLABException("inconsistent hash function lines");
     
-    uvs.push_back(vector<double>());
-    uvs.back().swap(current);
+    EuclideanPara ep;
+    ep.random_vec.assign(current.begin(), current.end()-1);
+    ep.random_uniform = current.back();
+    euclidean_paras.push_back(ep);
   }
   
-  hf = LSHAngleHashFunction(hf_id, fs_id, uvs);
+  hf = LSHEuclideanHashFunction(hf_id, fs_id, euclidean_paras);
   return in;  
 }
 
 
 // OUTPUT
 std::ostream&
-operator<<(std::ostream &os, const LSHAngleHashFunction &hf) {
+operator<<(std::ostream &os, const LSHEuclideanHashFunction &hf) {
   return os << hf.tostring();
 }
 
 
 string
-LSHAngleHashFunction::tostring() const {
+LSHEuclideanHashFunction::tostring() const {
   std::ostringstream oss;
   oss << id << '\n' << feature_set_id;
-  for (size_t i = 0; i < unit_vecs.size(); ++i) {
+  for (size_t i = 0; i < euclidean_paras.size(); ++i) {
     oss << '\n';
-    copy(unit_vecs[i].begin(), unit_vecs[i].end(), 
+    copy(euclidean_paras[i].random_vec.begin(), 
+         euclidean_paras[i].random_vec.end(), 
          std::ostream_iterator<double>(oss, "\t"));
+    oss << euclidean_paras[i].random_uniform;
   }
   return oss.str();
 }
 
 
 size_t 
-LSHAngleHashFunction::operator()(const FeatureVector &fv) const {
+LSHEuclideanHashFunction::operator()(const FeatureVector &fv) const {
   size_t value = 0;
-  for (size_t i = 0; i < unit_vecs.size(); ++i) {
-    value <<= 1ul;
-    value += (inner_product(unit_vecs[i].begin(),
-                            unit_vecs[i].end(), fv.begin(), 0.0) >= 0);
+  for (size_t i = 0; i < euclidean_paras.size(); ++i) {
+    double inner = inner_product(euclidean_paras[i].random_vec.begin(),
+                                 euclidean_paras[i].random_vec.end(),
+                                 fv.begin(), 0.0);
+    const double hash_value = floor((inner + euclidean_paras[i].random_uniform)
+                                    / euclidean_paras[i].uniform_seed);
   }
   return value;
 }

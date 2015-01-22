@@ -20,40 +20,47 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LSHANGLEHASHFUNCTION_HPP
-#define LSHANGLEHASHFUNCTION_HPP
+#ifndef LSHEUCLIDEANHASHFUNCTION_HPP
+#define LSHEUCLIDEANHASHFUNCTION_HPP
 
 #include <string>
 #include <vector>
 
 class FeatureVector;
 
-class LSHAngleHashFunction {
+struct EuclideanPara {
+  std::vector<double> random_vec;
+  double random_uniform;
+  double uniform_seed;
+};
+
+class LSHEuclideanHashFunction {
 public:
-  LSHAngleHashFunction() {}
-  LSHAngleHashFunction(const std::string &id_in, const std::string &fsi,
-                       const size_t n_features, const size_t n_bits);
-  LSHAngleHashFunction(const std::string &id_in, const std::string &fsi,
-                       const std::vector<std::vector<double> > &uvs) :
-    id(id_in), feature_set_id(fsi), unit_vecs(uvs) {}
+  LSHEuclideanHashFunction() {}
+  LSHEuclideanHashFunction(const std::string &id_in, const std::string &fsi,
+                       const size_t n_features, const size_t n_bits,
+                       const double w);
+  LSHEuclideanHashFunction(const std::string &id_in, const std::string &fsi,
+                       const std::vector<EuclideanPara> &eps) :
+    id(id_in), feature_set_id(fsi), euclidean_paras(eps) {}
   
   size_t operator()(const FeatureVector &fv) const;
   
   std::string tostring() const;
-  size_t size() const {return unit_vecs.size();};
+  size_t size() const {return euclidean_paras.size();};
   std::string get_id() const {return id;}
   std::string get_feature_set_id() const {return feature_set_id;}
   
 private:
   std::string id;
   std::string feature_set_id;
-  std::vector<std::vector<double> > unit_vecs;
+  std::vector<EuclideanPara> euclidean_paras;
 };
 
 std::ostream&
-operator<<(std::ostream &os, const LSHAngleHashFunction &hf);
+operator<<(std::ostream &os, const LSHEuclideanHashFunction &hf);
 
 std::istream&
-operator>>(std::istream &in, LSHAngleHashFunction &hf);
+operator>>(std::istream &in, LSHEuclideanHashFunction &hf);
 
 #endif
