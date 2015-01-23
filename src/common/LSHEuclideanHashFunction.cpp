@@ -2,9 +2,9 @@
  *    Part of AMORDAD software
  *
  *    Copyright (C) 2014 University of Southern California,
- *                       Andrew D. Smith
+ *                       Andrew D. Smith, Wenzheng Li
  *
- *    Authors: Andrew D. Smith
+ *    Authors: Andrew D. Smith, Wenzheng Li
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -83,6 +83,7 @@ LSHEuclideanHashFunction::LSHEuclideanHashFunction(const string &id_in,
 
   assist_vals.resize(n_bits, 0.0);
   for (size_t i = 0; i < n_bits; ++i) 
+    // +1 to avoid zero
     assist_vals[i] = static_cast<double>(rand() % RAND_MAX + 1);
 }
 
@@ -154,6 +155,7 @@ operator>>(std::istream &in, LSHEuclideanHashFunction &hf) {
     parameters.push_back(ep);
   }
   
+  assert(parameters.size() > 0);
   assert(assist_vals.size() == parameters.size());
   hf = LSHEuclideanHashFunction(hf_id, fs_id, parameters, w, assist_vals);
   return in;  
