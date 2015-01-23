@@ -80,6 +80,10 @@ LSHEuclideanHashFunction::LSHEuclideanHashFunction(const string &id_in,
     generate_random_parameter(n_features, w, parameters[i]);
     assert(parameters[i].rand_vec.size() == n_features);
   }
+
+  assist_vals.resize(n_bits, 0.0);
+  for (size_t i = 0; i < n_bits; ++i) 
+    assist_vals[i] = static_cast<double>(rand() % RAND_MAX);
 }
 
 
@@ -108,6 +112,16 @@ operator>>(std::istream &in, LSHEuclideanHashFunction &hf) {
   double w = 0.0;
   w_iss >> w;
 
+  // fourth line is the assist values
+  getline(in, line);
+  std::istringstream ass_iss(line);
+  vector<double> assist_vals;
+  double single_val = 0.0;
+  while(ass_iss >> single_val)
+    assist_vals.push_back(single_val);
+
+  // read parameters
+  // each line is rand vector followed by uniform val
   size_t n_dimensions = 0;
   
   vector<Parameter> parameters;
@@ -140,7 +154,8 @@ operator>>(std::istream &in, LSHEuclideanHashFunction &hf) {
     parameters.push_back(ep);
   }
   
-  hf = LSHEuclideanHashFunction(hf_id, fs_id, parameters, w);
+  assert(assist_vals.size() == parameters.size());
+  hf = LSHEuclideanHashFunction(hf_id, fs_id, parameters, w, assist_vals);
   return in;  
 }
 
@@ -155,8 +170,10 @@ operator<<(std::ostream &os, const LSHEuclideanHashFunction &hf) {
 string
 LSHEuclideanHashFunction::tostring() const {
   std::ostringstream oss;
-  oss << id << '\n' << feature_set_id;
-  oss << '\n' << uniform_seed;
+  oss << id << '\n' << feature_set_id << '\n';
+  oss << uniform_seed << '\n';
+  copy(assist_vals.begin(), assist_vals.end(),
+       std::ostream_iterator<double>(oss, "\t"));
   for (size_t i = 0; i < parameters.size(); ++i) {
     oss << '\n';
     copy(parameters[i].rand_vec.begin(), 
@@ -170,13 +187,16 @@ LSHEuclideanHashFunction::tostring() const {
 
 size_t 
 LSHEuclideanHashFunction::operator()(const FeatureVector &fv) const {
-  size_t value = 0;
+  const size_t PRIME = 1ul << 32 - 5;
+  size_t hash_value = 0ul;
   for (size_t i = 0; i < parameters.size(); ++i) {
     double inner = inner_product(parameters[i].rand_vec.begin(),
                                  parameters[i].rand_vec.end(),
                                  fv.begin(), 0.0);
-    const double hash_value = floor((inner + parameters[i].rand_uniform)
-                                    / uniform_seed);
+    const double inner_hash_value = floor((inner + parameters[i].rand_uniform)
+                                          / uniform_seed);
+    hash_value += static_cast<size_t>(inner_hash_value * assist_vals[i]) % PRIME;
+    hash_value %= PRIME;
   }
-  return value;
+  return hash_value;
 }

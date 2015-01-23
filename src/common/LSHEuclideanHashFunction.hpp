@@ -42,9 +42,10 @@ public:
                        const size_t n_features, const size_t n_bits,
                        const double w);
   LSHEuclideanHashFunction(const std::string &id_in, const std::string &fsi,
-                       const std::vector<Parameter> &ps,
-                       const double w) :
-    id(id_in), feature_set_id(fsi), parameters(ps), uniform_seed(w) {}
+                       const std::vector<Parameter> &ps, const double w,
+                       const std::vector<double> avs) :
+    id(id_in), feature_set_id(fsi), parameters(ps), 
+    uniform_seed(w), assist_vals(avs) {}
   
   size_t operator()(const FeatureVector &fv) const;
   
@@ -59,6 +60,8 @@ private:
   std::vector<Parameter> parameters;
   // parameter w
   double uniform_seed;
+  // n_features-d vector assisting to generate final hash value
+  std::vector<double> assist_vals;
 };
 
 std::ostream&
