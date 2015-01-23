@@ -83,7 +83,7 @@ LSHEuclideanHashFunction::LSHEuclideanHashFunction(const string &id_in,
 
   assist_vals.resize(n_bits, 0.0);
   for (size_t i = 0; i < n_bits; ++i) 
-    assist_vals[i] = static_cast<double>(rand() % RAND_MAX);
+    assist_vals[i] = static_cast<double>(rand() % RAND_MAX + 1);
 }
 
 
@@ -187,16 +187,18 @@ LSHEuclideanHashFunction::tostring() const {
 
 size_t 
 LSHEuclideanHashFunction::operator()(const FeatureVector &fv) const {
-  const size_t PRIME = 1ul << 32 - 5;
+  const size_t PRIME = (1ul << 32) - 5;
   size_t hash_value = 0ul;
   for (size_t i = 0; i < parameters.size(); ++i) {
     double inner = inner_product(parameters[i].rand_vec.begin(),
                                  parameters[i].rand_vec.end(),
                                  fv.begin(), 0.0);
-    const double inner_hash_value = floor((inner + parameters[i].rand_uniform)
-                                          / uniform_seed);
+    size_t inner_hash_value = static_cast<size_t>(floor(
+                              (inner + parameters[i].rand_uniform) 
+                              / uniform_seed));
     hash_value += static_cast<size_t>(inner_hash_value * assist_vals[i]) % PRIME;
     hash_value %= PRIME;
   }
+  assert(hash_value >= 0 && hash_value < PRIME);
   return hash_value;
 }

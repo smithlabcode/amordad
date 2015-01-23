@@ -72,7 +72,7 @@ generate_hash_function : $(addprefix $(COMMON)/, LSHAngleHashFunction.o)
 generate_euclidean_hash_function : $(addprefix $(COMMON)/, LSHEuclideanHashFunction.o)
 
 populate_hash_table : $(addprefix $(COMMON)/, LSHAngleHashTable.o \
-	LSHAngleHashFunction.o)
+	LSHAngleHashFunction.o LSHEuclideanHashFunction.o)
 
 build_graph : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o)
