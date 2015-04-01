@@ -54,8 +54,6 @@ using std::tr1::unordered_set;
 typedef LSHAngleHashTable LSHTab;
 typedef LSHAngleHashFunction LSHFun;
 
-size_t comparisons = 0;
-
 struct Result {
   Result(const string &i, const double v) : id(i), val(v) {}
   Result() : val(std::numeric_limits<double>::max()) {}
@@ -85,7 +83,6 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
        i != candidates.end(); ++i) {
     const FeatureVector fv(fvs.find(*i)->second);
     const double dist = query.compute_angle(fv);
-    ++comparisons;
     if (dist < current_dist_cutoff) {
       if (pq.size() == n_neighbors) 
         pq.pop();
@@ -126,7 +123,6 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
 
     // hash the query
     const size_t bucket_number = hf->second(query);
-    ++comparisons;
     unordered_map<size_t, vector<string> >::const_iterator
       bucket = i->second.find(bucket_number);
 
@@ -168,6 +164,120 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
 
   evaluate_candidates(fvs, query, n_neighbors,
                       max_proximity_radius, candidates, results);
+}
+
+
+static bool
+execute_insertion(unordered_map<string, FeatureVector> &fvs,
+                  const unordered_map<string, LSHFun> &hfs,
+                  unordered_map<string, LSHTab> &hts,
+                  RegularNearestNeighborGraph &g,
+                  const FeatureVector &query,
+                  const size_t n_neighbors) {
+  
+  /// TEST WHETHER QUERY IS ALREADY IN GRAPH
+  /// IF NOT ADD QUERY AS A NEW VERTEX
+  if (!g.add_vertex_if_new(query.get_id()))
+    throw SMITHLABException("cannot insert existing node: " + query.get_id());
+
+  /// INSERT QUERY INTO THE FEATURE VECTOR MAP
+  fvs[query.get_id()] = query;
+
+  unordered_set<string> candidates;
+  
+  // iterate over hash tables
+  for (unordered_map<string, LSHTab>::iterator i(hts.begin());
+       i != hts.end(); ++i) {
+
+    unordered_map<string, LSHFun>::const_iterator hf(hfs.find(i->first));
+    assert(hf != hfs.end());
+
+    // hash the query
+    const size_t bucket_number = hf->second(query);
+    unordered_map<size_t, vector<string> >::const_iterator
+      bucket = i->second.find(bucket_number);
+
+    if (bucket != i->second.end())
+      candidates.insert(bucket->second.begin(), bucket->second.end());
+    
+    // INSERT THE QUERY INTO EACH HASH TABLE
+    i->second.insert(query, bucket_number);
+  }
+
+  // gather neighbors of candidates
+  unordered_set<string> candidates_from_graph;
+  for (unordered_set<string>::const_iterator i(candidates.begin());
+       i != candidates.end(); ++i) {
+    vector<string> neighbors;
+    vector<double> neighbor_dists;
+    g.get_neighbors(*i, neighbors, neighbor_dists);
+
+    /*
+     * check each neighbor to see whether it was labeled as deleted before.
+     * We need to remove those previously deleted vertice from the neighbors
+     * and also delete the edge between the candidate and the deleted vertex
+     */
+
+    vector<string> deleted_nodes;
+    for (vector<string>::iterator j(neighbors.begin());
+         j != neighbors.end(); ++j) {
+
+      if (g.was_deleted(*j)) {
+        deleted_nodes.push_back(*j);
+        g.remove_edge(*i, *j);
+      }
+    }
+    for (vector<string>::const_iterator j(deleted_nodes.begin());
+         j != deleted_nodes.end(); ++j)
+      neighbors.erase(std::find(neighbors.begin(), neighbors.end(), *j ));
+
+    candidates_from_graph.insert(neighbors.begin(), neighbors.end());
+  }
+
+  candidates.insert(candidates_from_graph.begin(), candidates_from_graph.end());
+
+  vector<Result> neighbors;
+  double max = std::numeric_limits<double>::max();
+  evaluate_candidates(fvs, query, n_neighbors, max, candidates, neighbors);
+  
+  // CONNECT THE QUERY TO EACH OF THE "RESULT" NEIGHBORS
+  // IN THE GRAPH
+  for (vector<Result>::const_iterator i(neighbors.begin());
+       i != neighbors.end(); ++i)
+    g.update_vertex(query.get_id(), i->id, i->val);
+
+  return true;
+}
+
+
+static void
+execute_deletion(unordered_map<string, FeatureVector> &fvs,
+                 const unordered_map<string, LSHFun> &hfs,
+                 unordered_map<string, LSHTab> &hts,
+                 RegularNearestNeighborGraph &g,
+                 const FeatureVector &query) {
+  
+  // iterate over hash tables
+  for (unordered_map<string, LSHTab>::iterator i(hts.begin());
+       i != hts.end(); ++i) {
+
+    unordered_map<string, LSHFun>::const_iterator hf(hfs.find(i->first));
+    assert(hf != hfs.end());
+
+    // hash the query
+    const size_t bucket_number = hf->second(query);
+    unordered_map<size_t, vector<string> >::const_iterator
+      bucket = i->second.find(bucket_number);
+
+    // delete the query from each hash table
+    if (bucket != i->second.end())
+      i->second.remove(query, bucket_number);
+  }
+
+  g.remove_vertex(query.get_id());
+
+  // delete the query from the feature vectors map
+  fvs.erase(query.get_id());
 }
 
 
@@ -245,6 +355,17 @@ validate_file(const string &filename, char open_mode) {
   }
 }
 
+static FeatureVector
+get_query(const string &query_file) {
+
+  FeatureVector fv;
+  std::ifstream in(query_file.c_str());
+  if (!in)
+    throw SMITHLABException("bad feature vector file: " + query_file);
+  in >> fv;
+  return fv;
+}
+
 
 static void
 execute_commands(const string &command_file,
@@ -252,6 +373,41 @@ execute_commands(const string &command_file,
                  unordered_map<string, LSHFun> &hfs,
                  unordered_map<string, LSHTab> &hts,
                  RegularNearestNeighborGraph &g) {
+
+  size_t n_neighbors = 20;
+  double max_proximity_radius = 0.75;
+
+  std::ifstream in(command_file.c_str());
+  if (!in)
+    throw SMITHLABException("bad command file: " + command_file);
+
+  vector<pair<string,string> > commands;
+  string line;
+  while (getline(in, line)) {
+    std::istringstream iss(line);
+    string operation;
+    string query_path;
+    if(!(iss >> operation >> query_path))
+      throw SMITHLABException("bad command format: " + line);
+
+    commands.push_back(make_pair(operation, query_path));
+  }
+
+  for(size_t i = 0; i < commands.size(); ++i) {
+
+    FeatureVector fv = get_query(commands[i].second);
+
+    // execute different functions based on the command
+    if(commands[i].first == "query") {
+      vector<Result> results;
+      execute_query(fvs, hfs, hts, g, fv, n_neighbors, 
+                    max_proximity_radius, results);
+    }
+    else if(commands[i].first == "insert")
+      execute_insertion(fvs, hfs, hts, g, fv, n_neighbors); 
+    else if(commands[i].first == "delete")
+      execute_deletion(fvs, hfs, hts, g, fv); 
+  }
 }
 
 
@@ -261,9 +417,7 @@ main(int argc, const char **argv) {
   try {
 
     bool VERBOSE = false;
-    size_t n_neighbors = 1;
-    double max_proximity_radius = 0.75;
-
+    
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
                            "insertion, deletion and refresh with "
