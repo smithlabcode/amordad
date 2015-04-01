@@ -69,8 +69,11 @@ LSHAngleHashTable::remove(const FeatureVector &fv, const size_t hash_key) {
     if (pos == x->second.end()) 
       throw SMITHLABException("attempt to remove unknown point: " 
                               + fv.get_id());
-    else 
+    else {
       x->second.erase(pos);
+      if(x->second.empty())
+        buckets.erase(hash_key);
+    }
   }
 }
 
