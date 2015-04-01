@@ -53,6 +53,7 @@ using std::tr1::unordered_set;
 
 typedef LSHAngleHashTable LSHTab;
 typedef LSHAngleHashFunction LSHFun;
+typedef unordered_map<string, FeatureVector> FeatVecLookup;
 
 struct Result {
   Result(const string &i, const double v) : id(i), val(v) {}
@@ -280,7 +281,61 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
   fvs.erase(query.get_id());
 }
 
+static void
+add_relations_from_bucket(const vector<string> &bucket, 
+                          const FeatVecLookup &featvecs,
+                          RegularNearestNeighborGraph &nng) {
 
+  // iterate over bucket
+  for (size_t i = 0; i < bucket.size(); ++i) {
+    FeatVecLookup::const_iterator ii(featvecs.find(bucket[i]));
+    assert(ii != featvecs.end());
+
+    // iterate over other members of bucket
+    for (size_t j = i + 1; j < bucket.size(); ++j) {
+      FeatVecLookup::const_iterator jj(featvecs.find(bucket[j]));
+      assert(jj != featvecs.end());
+
+
+      // compare and update graph
+      const double w = ii->second.compute_angle(jj->second);
+
+      nng.update_vertex(bucket[j], bucket[i], w);
+      nng.update_vertex(bucket[i], bucket[j], w);
+    }
+  }
+}
+
+
+static void
+execute_refresh(const unordered_map<string, FeatureVector> &fvs,
+                unordered_map<string, LSHFun> &hfs,
+                unordered_map<string, LSHTab> &hts,
+                RegularNearestNeighborGraph &g,
+                const LSHAngleHashFunction &hash_fun) {
+
+  // INITIALIZE THE HASH TABLE
+  LSHAngleHashTable hash_table(hash_fun.get_id());
+  for (unordered_map<string, FeatureVector>::const_iterator i(fvs.begin());
+       i != fvs.end(); ++i)
+    hash_table.insert(i->second, hash_fun(i->second));
+
+  // iterate over buckets
+  for (BucketMap::const_iterator j(hash_table.begin()); j != hash_table.end(); ++j)
+    add_relations_from_bucket(j->second, fvs, g);
+
+  // remove the oldest hash function and associated hash table
+  // replaced by the new ones
+  // TODO: retrive time info from database
+
+  string oldest_hf = hfs.begin()->first;
+  unordered_map<string, LSHTab>::const_iterator ht(hts.find(oldest_hf));
+  hts.erase(ht->first);
+  hfs.erase(oldest_hf);
+  hts[hash_table.get_id()] = hash_table;
+  hfs[hash_fun.get_id()] = hash_fun;
+}
+ 
 /*
  * Config file has this structure:
  * feature_vectors_file: path to file containing <fv_id, fv_filename>
@@ -395,18 +450,30 @@ execute_commands(const string &command_file,
 
   for(size_t i = 0; i < commands.size(); ++i) {
 
-    FeatureVector fv = get_query(commands[i].second);
-
     // execute different functions based on the command
     if(commands[i].first == "query") {
+      FeatureVector fv = get_query(commands[i].second);
       vector<Result> results;
       execute_query(fvs, hfs, hts, g, fv, n_neighbors, 
-                    max_proximity_radius, results);
+          max_proximity_radius, results);
     }
-    else if(commands[i].first == "insert")
+    else if(commands[i].first == "insert") {
+      FeatureVector fv = get_query(commands[i].second);
       execute_insertion(fvs, hfs, hts, g, fv, n_neighbors); 
-    else if(commands[i].first == "delete")
+    }
+    else if(commands[i].first == "delete") {
+      FeatureVector fv = get_query(commands[i].second);
       execute_deletion(fvs, hfs, hts, g, fv); 
+    }
+    else if(commands[i].first == "refresh") {
+      string hash_fun_file = commands[i].second;
+      std::ifstream hash_fun_in(hash_fun_file.c_str());
+      if (!hash_fun_in)
+        throw SMITHLABException("cannot open: " + hash_fun_file);
+      LSHAngleHashFunction hf;
+      hash_fun_in >> hf;
+      execute_refresh(fvs, hfs, hts, g, hf); 
+    }
   }
 }
 
