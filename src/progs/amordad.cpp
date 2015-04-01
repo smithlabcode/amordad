@@ -246,6 +246,15 @@ validate_file(const string &filename, char open_mode) {
 }
 
 
+static void
+execute_commands(const string &command_file,
+                 unordered_map<string, FeatureVector> &fvs,
+                 unordered_map<string, LSHFun> &hfs,
+                 unordered_map<string, LSHTab> &hts,
+                 RegularNearestNeighborGraph &g) {
+}
+
+
 int
 main(int argc, const char **argv) {
 
@@ -259,7 +268,7 @@ main(int argc, const char **argv) {
     OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
                            "insertion, deletion and refresh with "
                            "database residing on disk",
-                           "<config-file> <queryfile> <outfile>");
+                           "<config-file> <command-file>");
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
@@ -281,15 +290,12 @@ main(int argc, const char **argv) {
       return EXIT_SUCCESS;
     }
     const string database_config_file(leftover_args.front());
-    const string queryfile(leftover_args[1]);
-    const string outfile(leftover_args.back());
+    const string command_file(leftover_args[1]);
     /****************** END COMMAND LINE OPTIONS *****************/
 
-    if (!validate_file(queryfile, 'r'))
-      throw SMITHLABException("bad sample file: " + queryfile);
+    if (!validate_file(command_file, 'r'))
+      throw SMITHLABException("bad command file: " + command_file);
 
-    if (!validate_file(outfile, 'w'))
-      throw SMITHLABException("bad output file: " + outfile);
 
     ////////////////////////////////////////////////////////////////////////
     ////// READING HASH {FUNCTIONS, TABLES, FEATURE_VECTOR} FILES //////////////
@@ -298,9 +304,6 @@ main(int argc, const char **argv) {
     string fv_paths_file, hf_paths_file, ht_paths_file, graph_file;
     read_config_file(database_config_file, fv_paths_file, hf_paths_file,
                      ht_paths_file, graph_file);
-
-    // unordered_map<string, string> fv_path_lookup;
-    // get_feature_vector_paths_lookup(fv_paths_file, fv_path_lookup);
 
     // reading samples in database
     unordered_map<string, FeatureVector> fv_lookup;
@@ -373,29 +376,10 @@ main(int argc, const char **argv) {
       cerr << "database loaded" << endl;
 
     ////////////////////////////////////////////////////////////////////////
-    ///// STARTING THE QUERY PROCESS ///////////////////////////////////////
+    ///// EXECUTE THE COMMANDS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    // reading request sample
-    FeatureVector query;
-    vector<string> labels;
-    load_features_and_labels(queryfile, query, labels);
-    vector<Result> results;
-    execute_query(fv_lookup, hf_lookup, ht_lookup, nng, query,
-                  n_neighbors, max_proximity_radius, results);
-    ////////////////////////////////////////////////////////////////////////
-    ///// NOW WRITE THE OUTPUT /////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////
-
-    std::ofstream out(outfile.c_str());
-    if (!out)
-      throw SMITHLABException("bad output file: " + outfile);
-    out << query.get_id() << '\t';
-    copy(results.begin(), results.end(),
-        std::ostream_iterator<Result>(out, "\t"));
-
-    if (VERBOSE)
-      cerr << comparisons << endl;
+    execute_commands(command_file, fv_lookup, hf_lookup, ht_lookup, nng);
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
