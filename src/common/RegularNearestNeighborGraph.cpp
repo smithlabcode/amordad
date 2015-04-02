@@ -2,9 +2,9 @@
  *    Part of AMORDAD software
  *
  *    Copyright (C) 2014 University of Southern California,
- *                       Andrew D. Smith and
+ *                       Andrew D. Smith and Wenzheng Li
  *
- *    Authors: Andrew D. Smith
+ *    Authors: Andrew D. Smith, Wenzheng Li
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ RegularNearestNeighborGraph::get_edge_count() const {
 
 size_t 
 RegularNearestNeighborGraph::get_vertex_count() const {
-  return boost::num_vertices(the_graph);
+  return boost::num_vertices(the_graph) - indices_deleted.size();
 }
 
 
@@ -305,11 +305,13 @@ RegularNearestNeighborGraph::get_neighbors(const string &query,
   
   for (graph_traits<internal_graph>::out_edge_iterator 
          i(e_begin); i != e_end; ++i) {
-    distances.push_back(get_distance(*i));
     
     unordered_map<size_t, string>::const_iterator name = 
       index_to_name.find(boost::target(*i, the_graph));
-    neighbors.push_back(name->second);
+    if(!was_deleted(name->first)) {
+      distances.push_back(get_distance(*i));
+      neighbors.push_back(name->second);
+    }
   }
 }
 
@@ -419,10 +421,16 @@ RegularNearestNeighborGraph::get_most_distant_neighbor(const nng_vertex &query,
   result = query;
   max_dist = 0.0;
   for (tie(e_i, e_j) = boost::out_edges(query, the_graph); e_i != e_j; ++e_i) {
-    const double curr_dist = get_distance(*e_i);
-    if (curr_dist > max_dist) {
-      result = boost::target(*e_i, the_graph);
-      max_dist = curr_dist;
+
+    unordered_map<size_t, string>::const_iterator name = 
+      index_to_name.find(boost::target(*e_i, the_graph));
+
+    if(!was_deleted(name->first)) {
+      const double curr_dist = get_distance(*e_i);
+      if (curr_dist > max_dist) {
+        result = boost::target(*e_i, the_graph);
+        max_dist = curr_dist;
+      }
     }
   }
 }

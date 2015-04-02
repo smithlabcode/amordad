@@ -2,9 +2,9 @@
  *    Part of AMORDAD software
  *
  *    Copyright (C) 2014 University of Southern California,
- *                       Andrew D. Smith and
+ *                       Andrew D. Smith and Wenzheng Li
  *
- *    Authors: Andrew D. Smith
+ *    Authors: Andrew D. Smith, Wenzheng Li
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ public:
   std::string get_graph_name() const {return graph_name;}
   size_t get_maximum_degree() const {return maximum_degree;}
   size_t get_vertex_count() const;
+  // edge count might not be accurate due to lazy deletion
   size_t get_edge_count() const;
 
   /* vertex accessors */
