@@ -472,6 +472,8 @@ execute_commands(const string &command_file,
       hash_fun_in >> hf;
       execute_refresh(fvs, hfs, hts, g, hf); 
     }
+    else
+      throw SMITHLABException("unknown command");
   }
 }
 
