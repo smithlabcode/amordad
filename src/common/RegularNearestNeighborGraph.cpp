@@ -396,19 +396,16 @@ RegularNearestNeighborGraph::get_most_distant_neighbor(const nng_vertex &query,
   max_dist = 0.0;
   for (tie(e_i, e_j) = boost::out_edges(query, the_graph); e_i != e_j; ++e_i) {
 
-    unordered_map<size_t, string>::const_iterator name = 
-      index_to_name.find(boost::target(*e_i, the_graph));
-
-    if(!was_deleted(name->first)) {
+    const nng_vertex v =  boost::target(*e_i, the_graph);
+    if(!was_deleted(v)) {
       const double curr_dist = get_distance(*e_i);
       if (curr_dist > max_dist) {
-        result = boost::target(*e_i, the_graph);
+        result = v;
         max_dist = curr_dist;
       }
     }
     else {
       const nng_vertex u =  boost::source(*e_i, the_graph);
-      const nng_vertex v =  boost::target(*e_i, the_graph);
       boost::remove_edge(u, v, the_graph);
     }
   }

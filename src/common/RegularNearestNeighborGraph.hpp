@@ -66,8 +66,6 @@ public:
   void get_neighbors(const std::string &query,
                      std::vector<std::string> &neighbors,
                      std::vector<double> &distances);
-  bool was_deleted(const nng_vertex &u) const;
-  bool was_deleted(const std::string &id) const;
 
   void remove_vertex(const nng_vertex &u);
   void remove_vertex(const std::string &id);
@@ -104,6 +102,9 @@ private:
   get_most_distant_neighbor(const nng_vertex &query,
                             nng_vertex &result, double &max_distance);
   
+  // lazy deletion check
+  bool was_deleted(const nng_vertex &u) const;
+  bool was_deleted(const std::string &id) const;
 };
 
 std::ostream&
