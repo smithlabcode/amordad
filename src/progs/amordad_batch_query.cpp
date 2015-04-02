@@ -141,25 +141,6 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
     vector<double> neighbor_dists;
     g.get_neighbors(*i, neighbors, neighbor_dists);
 
-    /*
-     * check each neighbor to see whether it was labeled as deleted before.
-     * We need to remove those previously deleted vertice from the neighbors
-     * and also delete the edge between the candidate and the deleted vertex
-     */
-    
-    vector<string> deleted_nodes;
-    for (vector<string>::iterator j(neighbors.begin());
-         j != neighbors.end(); ++j) {
-
-      if (g.was_deleted(*j)) {
-        deleted_nodes.push_back(*j);
-        g.remove_edge(*i, *j);
-      }
-    }
-    for (vector<string>::const_iterator j(deleted_nodes.begin());
-         j != deleted_nodes.end(); ++j)
-      neighbors.erase(std::find(neighbors.begin(), neighbors.end(), *j ));
-
     candidates_from_graph.insert(neighbors.begin(), neighbors.end());
   }
 

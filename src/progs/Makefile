@@ -17,17 +17,18 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# PROGS = build_graph_naively naive_batch_query \
-# 				naive_batch_insert naive_batch_delete\
-# 	normalize_feature_vector normalize_features compute_normalizers \
-# 	generate_hash_function populate_hash_table build_graph \
-#   generate_euclidean_hash_function \
-# 	amordad_batch_query \
-# 	amordad_batch_insert \
-# 	amordad_batch_delete \
-# 	amordad_batch_refresh \
-# 	simulate_feature_vector
-PROGS = amordad
+PROGS = build_graph_naively naive_batch_query \
+				naive_batch_insert naive_batch_delete\
+	normalize_feature_vector normalize_features compute_normalizers \
+	generate_hash_function populate_hash_table build_graph \
+  generate_euclidean_hash_function \
+	amordad_batch_query \
+	amordad_batch_insert \
+	amordad_batch_delete \
+	amordad_batch_refresh \
+	simulate_feature_vector\
+	amordad
+# PROGS = amordad
 
 ifndef SMITHLAB_CPP
 	SMITHLAB_CPP = ../smithlab_cpp
