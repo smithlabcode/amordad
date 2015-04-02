@@ -213,37 +213,6 @@ RegularNearestNeighborGraph::remove_vertex(const std::string &id) {
 
 
 void
-RegularNearestNeighborGraph::remove_edge(const nng_vertex &u, 
-                                         const nng_vertex &v) {
-  
-  // check to see if edge exists
-  bool already_exists;
-  graph_traits<internal_graph>::edge_descriptor the_edge;
-  boost::tie(the_edge, already_exists) = boost::edge(u, v, the_graph);
-  if (!already_exists)
-    throw SMITHLABException("attempt to remove non-existing edge: " + 
-        smithlab::toa(u) + " " + smithlab::toa(v));
-  boost::remove_edge(u, v, the_graph);
-}
-
-
-void 
-RegularNearestNeighborGraph::remove_edge(const string &u, 
-                                         const string &v) {
-
-  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(u));
-  if (u_idx == name_to_index.end())
-    throw SMITHLABException("cannot remove edge from unknown vertex: " + u);
-
-  unordered_map<string, size_t>::const_iterator v_idx(name_to_index.find(v));
-  if (v_idx == name_to_index.end())
-    throw SMITHLABException("cannot remove edge to unknown vertex: " + v);
-
-  remove_edge(u_idx->second, v_idx->second);
-}
-
-
-void
 RegularNearestNeighborGraph::add_vertices(const vector<string> &ids) {
   for (size_t i = 0; i < ids.size(); ++i)
     add_vertex(ids[i]);
@@ -292,7 +261,7 @@ RegularNearestNeighborGraph::get_distance(const string &u,
 void
 RegularNearestNeighborGraph::get_neighbors(const string &query, 
                                            vector<string> &neighbors,
-                                           vector<double> &distances) const {
+                                           vector<double> &distances) {
   neighbors.clear();
   distances.clear();
   
@@ -311,6 +280,11 @@ RegularNearestNeighborGraph::get_neighbors(const string &query,
     if(!was_deleted(name->first)) {
       distances.push_back(get_distance(*i));
       neighbors.push_back(name->second);
+    }
+    else {
+      const nng_vertex u =  boost::source(*i, the_graph);
+      const nng_vertex v =  boost::target(*i, the_graph);
+      boost::remove_edge(u, v, the_graph);
     }
   }
 }
@@ -416,7 +390,7 @@ operator<<(std::ostream &os, const RegularNearestNeighborGraph &nng) {
 void
 RegularNearestNeighborGraph::get_most_distant_neighbor(const nng_vertex &query,
                                                        nng_vertex &result, 
-                                                       double &max_dist) const {
+                                                       double &max_dist) {
   graph_traits<internal_graph>::out_edge_iterator e_i, e_j;
   result = query;
   max_dist = 0.0;
@@ -431,6 +405,11 @@ RegularNearestNeighborGraph::get_most_distant_neighbor(const nng_vertex &query,
         result = boost::target(*e_i, the_graph);
         max_dist = curr_dist;
       }
+    }
+    else {
+      const nng_vertex u =  boost::source(*e_i, the_graph);
+      const nng_vertex v =  boost::target(*e_i, the_graph);
+      boost::remove_edge(u, v, the_graph);
     }
   }
 }

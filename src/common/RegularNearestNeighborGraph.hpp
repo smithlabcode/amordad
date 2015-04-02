@@ -65,7 +65,7 @@ public:
                       &the_edge) const;
   void get_neighbors(const std::string &query,
                      std::vector<std::string> &neighbors,
-                     std::vector<double> &distances) const;
+                     std::vector<double> &distances);
   bool was_deleted(const nng_vertex &u) const;
   bool was_deleted(const std::string &id) const;
 
@@ -83,9 +83,6 @@ public:
   bool update_vertex(const nng_vertex &u, const nng_vertex &v, const double &w);
   bool update_vertex(const std::string &u, const std::string &v, 
                      const double &w);
-  
-  void remove_edge(const nng_vertex &u, const nng_vertex &v);
-  void remove_edge(const std::string &u, const std::string &v);
   
 
   std::string tostring() const;
@@ -105,7 +102,7 @@ private:
 
   void
   get_most_distant_neighbor(const nng_vertex &query,
-                            nng_vertex &result, double &max_distance) const;
+                            nng_vertex &result, double &max_distance);
   
 };
 
