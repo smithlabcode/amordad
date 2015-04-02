@@ -148,13 +148,19 @@ RegularNearestNeighborGraph::add_edge(const string &u, const string &v,
 
 void
 RegularNearestNeighborGraph::add_vertex(const string &id) {
-  if (name_to_index.find(id) != name_to_index.end())
-    throw SMITHLABException("cannot add existing vertex: " + id);
-  
-  const size_t index = boost::num_vertices(the_graph);
-  name_to_index[id] = index;
-  index_to_name[index] = id;
-  boost::add_vertex(the_graph);
+  unordered_map<string, size_t>::const_iterator u_idx(name_to_index.find(id));
+  if (u_idx != name_to_index.end()) {
+    if (!was_deleted(id))
+      throw SMITHLABException("cannot add existing vertex: " + id);
+    else
+      indices_deleted.erase(u_idx->second);
+  }
+  else {
+    const size_t index = boost::num_vertices(the_graph);
+    name_to_index[id] = index;
+    index_to_name[index] = id;
+    boost::add_vertex(the_graph);
+  }
 }
 
 
