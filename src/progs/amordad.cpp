@@ -338,7 +338,7 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
  
 /*
  * Config file has this structure:
- * feature_vectors_file: path to file containing <fv_id, fv_filename>
+ * feature_vectors_file: path to file containing filenames of feature vectors
  * hash_functions_file: path to file containing filenames of hash functions
  * hash_tables_file: path to file containing filenames of all hash tables
  * graph_file: the filename for the m-NNG
@@ -380,8 +380,6 @@ get_database(const bool VERBOSE, const string &db_file,
 
   vector<string> fv_files;
   get_filenames(db_file, fv_files);
-  for (size_t i = 0; i < fv_files.size(); ++i)
-    fv_files[i] = fv_files[i].substr(fv_files[i].find(' ') + 1);
 
   for(size_t i = 0; i < fv_files.size(); ++i) {
     FeatureVector fv;
