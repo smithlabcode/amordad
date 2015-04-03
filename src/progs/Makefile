@@ -27,7 +27,8 @@ PROGS = build_graph_naively naive_batch_query \
 	amordad_batch_delete \
 	amordad_batch_refresh \
 	simulate_feature_vector\
-	amordad
+	amordad \
+	test
 # PROGS = amordad
 
 ifndef SMITHLAB_CPP
@@ -35,16 +36,18 @@ ifndef SMITHLAB_CPP
 endif
 
 COMMON = ../common
+MYSQL = /usr/include/mysql
 
 INCLUDEDIRS = $(SMITHLAB_CPP) $(COMMON)
 INCLUDEDIRS += $(BOOST)
+INCLUDEDIRS += $(MYSQL)
 INCLUDEARGS = $(addprefix -I,$(INCLUDEDIRS))
 
 CXX = g++
 CXXFLAGS = -Wall -fmessage-length=50
 OPTFLAGS = -O2
 DEBUGFLAGS = -g -pg
-LIBS = -lgsl -lgslcblas
+LIBS = -lgsl -lgslcblas -lmysqlpp
 
 # Flags for Mavericks
 ifeq "$(shell uname)" "Darwin"
