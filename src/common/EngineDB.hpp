@@ -36,6 +36,7 @@ public:
     db(db), server(server), user(user), pass(pass) {}
 
   bool delete_feature_vec(const std::string &fv_id);
+  bool insert_feature_vec(const std::string &fv_id, const std::string &path);
 
 private:
   std::string db;

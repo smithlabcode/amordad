@@ -31,18 +31,6 @@ using std::endl;
 bool
 EngineDB::delete_feature_vec(const std::string &fv_id) {
 
-  // mysqlpp::Connection conn(false);
-  //
-  // std::string query_state = 
-  //   std::string("delete from feature_vector where id = ") + fv_id;
-  //
-  // if(conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str()) {
-  //   mysqlpp::Query query = conn.query(query_state);
-  //   return true;
-  // }
-  // else
-  //   return false;
-
   std::cout << fv_id << std::endl;
   mysqlpp::Connection conn(false);
   if(conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str())) {
@@ -64,4 +52,32 @@ EngineDB::delete_feature_vec(const std::string &fv_id) {
     return false;
   }
 
+}
+  
+
+bool
+EngineDB::insert_feature_vec(const std::string &fv_id, 
+                             const std::string &path) {
+  std::cout << fv_id << std::endl;
+  mysqlpp::Connection conn(false);
+  if(conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str())) {
+    string query_str = "insert into feature_vector values (\"" + fv_id + "\",\"" + path + "\")";
+    cout << query_str << endl;
+    mysqlpp::Query query = conn.query(query_str.c_str());
+    if (mysqlpp::StoreQueryResult res = query.store()) {
+      std::cout << "We have:" << std::endl;
+      for (size_t i = 0; i < res.num_rows(); ++i) {
+        std::cout << '\t' << res[i][0] << endl;
+      }
+    }
+    else {
+      std::cerr << "Failed to get item list: " << query.error() << std::endl;
+      return false;
+    }
+    return true;
+  }
+  else {
+    std::cerr << "DB connection failed: " << conn.error() << std::endl;
+    return false;
+  }
 }
