@@ -19,9 +19,49 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <iostream>
+#include <string>
 #include "EngineDB.hpp"
 
-EngineDB::EngineDB(const std::string db, const std::string server, 
-                   const std::string user, const std::string pass) {
-  conn
+using std::string;
+using std::cout;
+using std::cerr;
+using std::endl;
+
+bool
+EngineDB::delete_feature_vec(const std::string &fv_id) {
+
+  // mysqlpp::Connection conn(false);
+  //
+  // std::string query_state = 
+  //   std::string("delete from feature_vector where id = ") + fv_id;
+  //
+  // if(conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str()) {
+  //   mysqlpp::Query query = conn.query(query_state);
+  //   return true;
+  // }
+  // else
+  //   return false;
+
+  std::cout << fv_id << std::endl;
+  mysqlpp::Connection conn(false);
+  if(conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str())) {
+    mysqlpp::Query query = conn.query("select * from sample");
+    if (mysqlpp::StoreQueryResult res = query.store()) {
+      std::cout << "We have:" << std::endl;
+      for (size_t i = 0; i < res.num_rows(); ++i) {
+        std::cout << '\t' << res[i][0] << endl;
+      }
+    }
+    else {
+      std::cerr << "Failed to get item list: " << query.error() << std::endl;
+      return false;
+    }
+    return true;
+  }
+  else {
+    std::cerr << "DB connection failed: " << conn.error() << std::endl;
+    return false;
+  }
+
 }

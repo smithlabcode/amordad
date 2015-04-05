@@ -25,8 +25,11 @@ CXX = g++
 CXXFLAGS = -Wall -fmessage-length=50 
 OPTFLAGS = -O2
 DEBUGFLAGS = -g
+LIBS = -lmysqlpp
 
-INCLUDEDIRS =  $(SMITHLAB_CPP)/
+MYSQL = /usr/include/mysql
+INCLUDEDIRS =  $(SMITHLAB_CPP)
+INCLUDEDIRS += $(MYSQL)
 INCLUDEARGS = $(addprefix -I,$(INCLUDEDIRS))
 
 ifdef DEBUG
@@ -47,7 +50,7 @@ endif
 endif
 
 %.o: %.cpp %.hpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $< $(INCLUDEARGS)
+	$(CXX) $(CXXFLAGS) -c -o $@ $< $(INCLUDEARGS) $(LIBS)
 
 clean: 
 	@-rm -f *.o *~

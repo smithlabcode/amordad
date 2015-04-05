@@ -32,10 +32,16 @@ class EngineDB {
 public:
   EngineDB() {}
   EngineDB(const std::string db, const std::string server, 
-           const std::string user, const std::string pass);
+           const std::string user, const std::string pass) :
+    db(db), server(server), user(user), pass(pass) {}
+
+  bool delete_feature_vec(const std::string &fv_id);
 
 private:
-  mysqlpp::Connection conn;
+  std::string db;
+  std::string server;
+  std::string user;
+  std::string pass;
 };
 
 #endif
