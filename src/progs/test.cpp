@@ -12,5 +12,10 @@ int main() {
   string pass = "580230mysql";
 
   EngineDB eng(db,server,user,pass);
-  eng.insert_feature_vec("test_fv_1", "path1");
+  string id, path;
+  std::cout << "input:" << std::endl;
+  while(cin >> id >> path) {
+    eng.insert_feature_vec(id, path);
+    std::cout << "input:" << std::endl;
+  }
 }

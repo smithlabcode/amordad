@@ -43,6 +43,7 @@ private:
   std::string server;
   std::string user;
   std::string pass;
+  mysqlpp::Connection conn;
 };
 
 #endif
