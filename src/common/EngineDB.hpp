@@ -32,11 +32,11 @@ class EngineDB {
 public:
   EngineDB() {}
   EngineDB(const std::string db, const std::string server, 
-           const std::string user, const std::string pass) :
-    db(db), server(server), user(user), pass(pass) {}
+           const std::string user, const std::string pass);
 
   bool delete_feature_vec(const std::string &fv_id);
   bool insert_feature_vec(const std::string &fv_id, const std::string &path);
+  bool insert_feature_vec_t(const std::string &fv_id, const std::string &path);
 
 private:
   std::string db;

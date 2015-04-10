@@ -28,55 +28,59 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+EngineDB:: EngineDB(const std::string db, const std::string server, 
+           const std::string user, const std::string pass) :
+  db(db), server(server), user(user), pass(pass) { 
+    conn.set_option(new mysqlpp::MultiStatementsOption(true));
+    if(!conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str()))
+      std::cerr << "DB connection failed: " << conn.error() << std::endl;
+}
+
+
 bool
 EngineDB::delete_feature_vec(const std::string &fv_id) {
 
-  std::cout << fv_id << std::endl;
-  if(conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str())) {
-    mysqlpp::Query query = conn.query("select * from sample");
-    if (mysqlpp::StoreQueryResult res = query.store()) {
-      std::cout << "We have:" << std::endl;
-      for (size_t i = 0; i < res.num_rows(); ++i) {
-        std::cout << '\t' << res[i][0] << endl;
-      }
-    }
-    else {
-      std::cerr << "Failed to get item list: " << query.error() << std::endl;
-      return false;
-    }
+  mysqlpp::Query query = conn.query();
+  query << "delete from feature_vector where id=" 
+        << mysqlpp::quote << fv_id;
+  if(query.execute())
     return true;
-  }
-  else {
-    std::cerr << "DB connection failed: " << conn.error() << std::endl;
-    return false;
-  }
 
+  return false;
 }
   
 
 bool
 EngineDB::insert_feature_vec(const std::string &fv_id, 
                              const std::string &path) {
-  conn.set_option(new mysqlpp::MultiStatementsOption(true));
-  if(conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str())) {
-    string query_str = "insert into feature_vector values (\"" + fv_id + "\",\"" + path + "\")";
-    string query_str_2 = "insert into feature_vector values (\"" + path + "\",\"" + fv_id + "\")";
-    // mysqlpp::Query query = conn.query(query_str.c_str());
-    mysqlpp::Query query = conn.query();
-    // mysqlpp::Transaction trans(conn, 
-    //                            mysqlpp::Transaction::serializable,
-    //                            mysqlpp::Transaction::session);
-    query << query_str << query_str_2;
-    query.execute();
-    // std::cout << "\nRow inserted, but not committed. Please confirm!" << std::endl;
-    // int yes;
-    // std::cin >> yes;
-    // std::cout << "\nCommiting transaction gives us:" << std::endl;
-    // trans.commit();
-    return true;
-  }
-  else {
-    std::cerr << "DB connection failed: " << conn.error() << std::endl;
-    return false;
-  }
+  string query_str = "insert into feature_vector values (\"" + fv_id + "\",\"" + path + "\");";
+  // string query_str_2 = "insert into feature_vector values (\"" + path + "\",\"" + fv_id + "\");";
+  // mysqlpp::Query query = conn.query(query_str.c_str());
+  // mysqlpp::Transaction trans(conn, 
+  //                            mysqlpp::Transaction::serializable,
+  //                            mysqlpp::Transaction::session);
+  mysqlpp::Query query1 = conn.query();
+  query1 << query_str;
+  query1.execute();
+  // mysqlpp::Query query2 = conn.query();
+  // query2 << query_str_2;
+  // query2.execute();
+
+  // std::cout << "\nRow inserted, but not committed. Please confirm!" << std::endl;
+  // int yes;
+  // std::cin >> yes;
+  // std::cout << "\nCommiting transaction gives us:" << std::endl;
+  insert_feature_vec_t(fv_id,path);
+  // trans.commit();
+  return true;
+}
+
+bool
+EngineDB::insert_feature_vec_t(const std::string &fv_id, 
+                             const std::string &path) {
+  string query_str_2 = "insert into feature_vector values (\"" + path + "\",\"" + fv_id + "\");";
+  mysqlpp::Query query2 = conn.query();
+  query2 << query_str_2;
+  query2.execute();
+  return true;
 }

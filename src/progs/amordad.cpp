@@ -40,6 +40,8 @@
 #include "LSHAngleHashTable.hpp"
 #include "LSHAngleHashFunction.hpp"
 
+#include "EngineDB.hpp"
+
 using std::string;
 using std::vector;
 using std::cerr;
@@ -218,7 +220,8 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
                  const unordered_map<string, LSHFun> &hfs,
                  unordered_map<string, LSHTab> &hts,
                  RegularNearestNeighborGraph &g,
-                 const FeatureVector &query) {
+                 const FeatureVector &query,
+                 const EngineDB &eng) {
   
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::iterator i(hts.begin());
@@ -241,6 +244,9 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
 
   // delete the query from the feature vectors map
   fvs.erase(query.get_id());
+
+  // update the database
+  eng.delete_feature_vec(query.get_id());
 }
 
 static void
