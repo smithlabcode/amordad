@@ -26,6 +26,23 @@
 
 #include <string>
 #include <vector>
+#include <limits>
+
+
+struct Result {
+  Result(const std::string &i, const double v) : id(i), val(v) {}
+  Result() : val(std::numeric_limits<double>::max()) {}
+  bool operator<(const Result &other) const {return val < other.val;}
+  std::string id;
+  double val;
+};
+std::ostream &
+operator<<(std::ostream &os, const Result &r);
+
+
+class LSHAngleHashFunction;
+class FeatureVector;
+typedef std::tr1::unordered_map<std::string, LSHAngleHashFunction> HashFunLookup;
 
 
 class EngineDB {
@@ -34,9 +51,10 @@ public:
   EngineDB(const std::string db, const std::string server, 
            const std::string user, const std::string pass);
 
-  bool delete_feature_vec(const std::string &fv_id);
-  bool insert_feature_vec(const std::string &fv_id, const std::string &path);
-  bool insert_feature_vec_t(const std::string &fv_id, const std::string &path);
+  bool process_deletion(const std::string &fv_id) const;
+  bool process_insertion(const FeatureVector &fv, const std::string &path,
+                         const HashFunLookup &hfs,
+                         const std::vector<Result> &neighbors) const;
 
 private:
   std::string db;
@@ -44,6 +62,15 @@ private:
   std::string user;
   std::string pass;
   mysqlpp::Connection conn;
-};
+
+  bool delete_feature_vec(const std::string &fv_id);
+  bool insert_feature_vec(const std::string &fv_id, const std::string &path);
+  bool insert_hash_occupant(const std::string &hf_id, const size_t hash_value, 
+                            const std::string &fv_id);
+  bool insert_graph_edge(const std::string &fv_id,
+                         const std::string &ng_id,
+                         const double dist);
+
+ };
 
 #endif

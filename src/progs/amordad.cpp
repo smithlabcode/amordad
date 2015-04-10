@@ -57,18 +57,16 @@ typedef LSHAngleHashTable LSHTab;
 typedef LSHAngleHashFunction LSHFun;
 typedef unordered_map<string, FeatureVector> FeatVecLookup;
 
-struct Result {
-  Result(const string &i, const double v) : id(i), val(v) {}
-  Result() : val(std::numeric_limits<double>::max()) {}
-  bool operator<(const Result &other) const {return val < other.val;}
-  string id;
-  double val;
-};
 
+static FeatureVector
+get_query(const string &query_file) {
 
-std::ostream &
-operator<<(std::ostream &os, const Result &r) {
-  return os << r.id << '\t' << r.val;
+  FeatureVector fv;
+  std::ifstream in(query_file.c_str());
+  if (!in)
+    throw SMITHLABException("bad feature vector file: " + query_file);
+  in >> fv;
+  return fv;
 }
 
 
@@ -156,9 +154,12 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
                   const unordered_map<string, LSHFun> &hfs,
                   unordered_map<string, LSHTab> &hts,
                   RegularNearestNeighborGraph &g,
-                  const FeatureVector &query,
-                  const size_t n_neighbors) {
-  
+                  const string  &query_path,
+                  const size_t n_neighbors,
+                  const EngineDB &eng) {
+
+  FeatureVector query = get_query(query_path);
+
   /// TEST WHETHER QUERY IS ALREADY IN GRAPH
   /// IF NOT ADD QUERY AS A NEW VERTEX
   if (!g.add_vertex_if_new(query.get_id()))
@@ -211,6 +212,9 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
        i != neighbors.end(); ++i)
     g.update_vertex(query.get_id(), i->id, i->val);
 
+  // UPDATE THE DATABASE
+  eng.process_insertion(query, query_path, hfs, neighbors);
+
   return true;
 }
 
@@ -246,7 +250,7 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
   fvs.erase(query.get_id());
 
   // update the database
-  eng.delete_feature_vec(query.get_id());
+  eng.process_deletion(query.get_id());
 }
 
 static void
@@ -376,17 +380,6 @@ validate_file(const string &filename, char open_mode) {
   }
 }
 
-static FeatureVector
-get_query(const string &query_file) {
-
-  FeatureVector fv;
-  std::ifstream in(query_file.c_str());
-  if (!in)
-    throw SMITHLABException("bad feature vector file: " + query_file);
-  in >> fv;
-  return fv;
-}
-
 
 static void
 execute_commands(const string &command_file,
@@ -414,6 +407,13 @@ execute_commands(const string &command_file,
     commands.push_back(make_pair(operation, query_path));
   }
 
+  string db = "amorgin";
+  string server = "localhost";
+  string user = "root";
+  string pass = "580230mysql";
+
+  EngineDB eng(db,server,user,pass);
+
   for(size_t i = 0; i < commands.size(); ++i) {
 
     // execute different functions based on the command
@@ -424,12 +424,12 @@ execute_commands(const string &command_file,
           max_proximity_radius, results);
     }
     else if(commands[i].first == "insert") {
-      FeatureVector fv = get_query(commands[i].second);
-      execute_insertion(fvs, hfs, hts, g, fv, n_neighbors); 
+      string query_path = commands[i].second;
+      execute_insertion(fvs, hfs, hts, g, query_path, n_neighbors, eng); 
     }
     else if(commands[i].first == "delete") {
       FeatureVector fv = get_query(commands[i].second);
-      execute_deletion(fvs, hfs, hts, g, fv); 
+      execute_deletion(fvs, hfs, hts, g, fv, eng); 
     }
     else if(commands[i].first == "refresh") {
       string hash_fun_file = commands[i].second;
