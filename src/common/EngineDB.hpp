@@ -26,6 +26,7 @@
 
 #include <string>
 #include <vector>
+#include <tr1/unordered_map>
 #include <limits>
 
 
@@ -51,10 +52,10 @@ public:
   EngineDB(const std::string db, const std::string server, 
            const std::string user, const std::string pass);
 
-  bool process_deletion(const std::string &fv_id) const;
+  bool process_deletion(const std::string &fv_id);
   bool process_insertion(const FeatureVector &fv, const std::string &path,
                          const HashFunLookup &hfs,
-                         const std::vector<Result> &neighbors) const;
+                         const std::vector<Result> &neighbors);
 
 private:
   std::string db;

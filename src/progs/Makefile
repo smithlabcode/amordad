@@ -29,7 +29,7 @@
 # 	simulate_feature_vector\
 # 	amordad \
 # 	test
-PROGS = test
+PROGS = amordad
 
 ifndef SMITHLAB_CPP
 	SMITHLAB_CPP = ../smithlab_cpp
@@ -97,7 +97,7 @@ amordad_batch_delete : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o)
 
 amordad : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
-	LSHAngleHashTable.o LSHAngleHashFunction.o)
+	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
 
 test : $(addprefix $(COMMON)/, EngineDB.o)
 

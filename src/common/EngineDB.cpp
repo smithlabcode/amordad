@@ -19,8 +19,21 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <iostream>
 #include <string>
+#include <vector>
+#include <algorithm>
+#include <climits>
+#include <cmath>
+#include <ctime>
+#include <tr1/unordered_set>
+#include <cstdio>
+#include <iterator>
+#include <queue>
+
+
+// #include <iostream>
+// #include <string>
+// #include <iterator>
 #include "EngineDB.hpp"
 
 
@@ -49,7 +62,7 @@ EngineDB:: EngineDB(const std::string db, const std::string server,
 
 
 bool
-EngineDB::process_deletion(const std::string &fv_id) const {
+EngineDB::process_deletion(const std::string &fv_id) {
   return delete_feature_vec(fv_id);
 }
   
@@ -58,7 +71,7 @@ bool
 EngineDB::process_insertion( const FeatureVector &fv, 
                              const std::string &path,
                              const HashFunLookup &hfs,
-                             const std::vector<Result> &neighbors) const {
+                             const std::vector<Result> &neighbors) {
   mysqlpp::Transaction trans(conn, 
       mysqlpp::Transaction::serializable,
       mysqlpp::Transaction::session);
@@ -67,14 +80,15 @@ EngineDB::process_insertion( const FeatureVector &fv,
   insert_feature_vec(fv.get_id(), path);
 
   // insert fv_id and its hash value to each hash table
-  for (size_t i = 0; i < hfs.size(); ++i) {
-    size_t hash_value = hfs[i].second(fv);
-    insert_hash_occupant(hfs[i].first, hash_value, fv.get_id());
+  for (HashFunLookup::const_iterator i(hfs.begin());
+       i != hfs.end(); ++i) {
+    size_t hash_value = i->second(fv);
+    insert_hash_occupant(i->first, hash_value, fv.get_id());
   }
 
   // insert fv_id and its neighbor to graph
   for (size_t i = 0; i < neighbors.size(); ++i)
-    insert_graph_edge(fv.get_id(), neighbors[i].id, neighbors.val);
+    insert_graph_edge(fv.get_id(), neighbors[i].id, neighbors[i].val);
 
   trans.commit();
   return true;

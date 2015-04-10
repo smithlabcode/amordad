@@ -156,7 +156,7 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
                   RegularNearestNeighborGraph &g,
                   const string  &query_path,
                   const size_t n_neighbors,
-                  const EngineDB &eng) {
+                  EngineDB &eng) {
 
   FeatureVector query = get_query(query_path);
 
@@ -225,7 +225,7 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
                  unordered_map<string, LSHTab> &hts,
                  RegularNearestNeighborGraph &g,
                  const FeatureVector &query,
-                 const EngineDB &eng) {
+                 EngineDB &eng) {
   
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::iterator i(hts.begin());
