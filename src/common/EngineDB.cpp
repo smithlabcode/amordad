@@ -129,6 +129,7 @@ EngineDB::insert_hash_occupant(const std::string &hf_id,
   return query.execute();
 }
 
+
 bool
 EngineDB::insert_graph_edge(const std::string &fv_id,
                             const std::string &ng_id,
@@ -140,4 +141,37 @@ EngineDB::insert_graph_edge(const std::string &fv_id,
     << mysqlpp::quote << ng_id << ","
     << dist << ");";
   return query.execute();
+}
+
+
+bool 
+EngineDB::insert_hash_function(const std::string &hf_id, 
+                               const std::string &path) {
+
+  mysqlpp::Query query = conn.query();
+  query << "insert into hash_function values (" 
+    << mysqlpp::quote << hf_id << ","
+    << mysqlpp::quote << path << ");";
+  return query.execute();
+}
+
+
+bool 
+EngineDB::delete_hash_function(const std::string &hf_id) {
+
+  mysqlpp::Query query = conn.query();
+  query << "delete from hash_function where id = " 
+        << mysqlpp::quote << hf_id;
+  return query.execute();
+}
+
+
+string
+EngineDB::get_oldest_hash_function() {
+
+  mysqlpp::Query query = conn.query();
+  query << "delete from hash_function where id = " 
+    << mysqlpp::quote << hf_id;
+  // return query.execute();
+  return string("oldest_hf");
 }

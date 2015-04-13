@@ -56,6 +56,7 @@ public:
   bool process_insertion(const FeatureVector &fv, const std::string &path,
                          const HashFunLookup &hfs,
                          const std::vector<Result> &neighbors);
+  std::string get_oldest_hash_function();
 
 private:
   std::string db;
@@ -71,6 +72,8 @@ private:
   bool insert_graph_edge(const std::string &fv_id,
                          const std::string &ng_id,
                          const double dist);
+  bool insert_hash_function(const std::string &hf_id, const std::string &path);
+  bool delete_hash_function(const std::string &hf_id);
 
  };
 

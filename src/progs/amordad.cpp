@@ -284,7 +284,15 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
                 unordered_map<string, LSHFun> &hfs,
                 unordered_map<string, LSHTab> &hts,
                 RegularNearestNeighborGraph &g,
-                const LSHAngleHashFunction &hash_fun) {
+                const string &hash_fun_file,
+                EngineDB &eng) {
+
+  // READ THE HASH FUNCTION
+  std::ifstream hash_fun_in(hash_fun_file.c_str());
+  if (!hash_fun_in)
+    throw SMITHLABException("cannot open: " + hash_fun_file);
+  LSHAngleHashFunction hash_fun;
+  hash_fun_in >> hash_fun;
 
   // INITIALIZE THE HASH TABLE
   LSHAngleHashTable hash_table(hash_fun.get_id());
@@ -298,9 +306,8 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
 
   // remove the oldest hash function and associated hash table
   // replaced by the new ones
-  // TODO: retrive time info from database
 
-  string oldest_hf = hfs.begin()->first;
+  string oldest_hf = eng.get_oldest_hash_function();
   unordered_map<string, LSHTab>::const_iterator ht(hts.find(oldest_hf));
   hts.erase(ht->first);
   hfs.erase(oldest_hf);
@@ -433,12 +440,7 @@ execute_commands(const string &command_file,
     }
     else if(commands[i].first == "refresh") {
       string hash_fun_file = commands[i].second;
-      std::ifstream hash_fun_in(hash_fun_file.c_str());
-      if (!hash_fun_in)
-        throw SMITHLABException("cannot open: " + hash_fun_file);
-      LSHAngleHashFunction hf;
-      hash_fun_in >> hf;
-      execute_refresh(fvs, hfs, hts, g, hf); 
+      execute_refresh(fvs, hfs, hts, g, hash_fun_file, eng); 
     }
     else
       throw SMITHLABException("unknown command");
