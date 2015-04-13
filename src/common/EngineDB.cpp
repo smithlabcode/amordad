@@ -19,23 +19,17 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "EngineDB.hpp"
+#include "smithlab_utils.hpp"
+#include "smithlab_os.hpp"
+
+#include <cmath>
 #include <string>
 #include <vector>
-#include <algorithm>
+#include <iostream>
+#include <sstream>
 #include <climits>
-#include <cmath>
-#include <ctime>
-#include <tr1/unordered_set>
-#include <cstdio>
-#include <iterator>
-#include <queue>
-
-
-// #include <iostream>
-// #include <string>
-// #include <iterator>
-#include "EngineDB.hpp"
-
+#include <numeric>
 
 #include "LSHAngleHashFunction.hpp"
 #include "FeatureVector.hpp"
@@ -112,7 +106,7 @@ EngineDB::process_refresh(const LSHAngleHashFunction &hf,
       mysqlpp::Transaction::session);
 
   // insert new hash function and its path to hash_function
-  insert_hash_function(hf.get_id(), hf_path);
+  insert_hash_function(hf.get_id(), path);
 
   // insert fv_id and its hash value for each fv
   for (FeatVecLookup::const_iterator i(fvs.begin());
@@ -207,11 +201,16 @@ EngineDB::delete_hash_function(const std::string &hf_id) {
 string
 EngineDB::get_oldest_hash_function() {
 
+  string old_hash = "";
   mysqlpp::Query query = conn.query();
-  query << "delete from hash_function where id = " 
-    << mysqlpp::quote << hf_id;
-  // return query.execute();
-  return string("oldest_hf");
+  query << "select id from hash_function order by update_time asc limit 1"; 
+  if(mysqlpp::StoreQueryResult res = query.store()) {
+    res[0][0].to_string(old_hash);
+    return old_hash;
+  }
+  else
+    throw SMITHLABException("No hash function in database");
+  return old_hash;
 }
 
 

@@ -43,7 +43,7 @@ operator<<(std::ostream &os, const Result &r);
 
 struct Edge {
   Edge(const std::string &u, const std::string &v, const double d) 
-    : src(u), dst(v), val(d) {}
+    : src(u), dst(v), dist(d) {}
   Edge() : dist(std::numeric_limits<double>::max()) {}
   std::string src;
   std::string dst;
