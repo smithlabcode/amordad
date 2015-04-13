@@ -256,7 +256,8 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
 static void
 add_relations_from_bucket(const vector<string> &bucket, 
                           const FeatVecLookup &featvecs,
-                          RegularNearestNeighborGraph &nng) {
+                          RegularNearestNeighborGraph &nng,
+                          vector<Edge> &added_edges) {
 
   // iterate over bucket
   for (size_t i = 0; i < bucket.size(); ++i) {
@@ -272,8 +273,10 @@ add_relations_from_bucket(const vector<string> &bucket,
       // compare and update graph
       const double w = ii->second.compute_angle(jj->second);
 
-      nng.update_vertex(bucket[j], bucket[i], w);
-      nng.update_vertex(bucket[i], bucket[j], w);
+      if(nng.update_vertex(bucket[j], bucket[i], w))
+        added_edges.push_back(Edge(bucket[j], bucket[i], w));
+      if(nng.update_vertex(bucket[i], bucket[j], w))
+        added_edges.push_back(Edge(bucket[i], bucket[j], w));
     }
   }
 }
@@ -300,9 +303,10 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
        i != fvs.end(); ++i)
     hash_table.insert(i->second, hash_fun(i->second));
 
+  vector<Edge> added_edges;
   // iterate over buckets
   for (BucketMap::const_iterator j(hash_table.begin()); j != hash_table.end(); ++j)
-    add_relations_from_bucket(j->second, fvs, g);
+    add_relations_from_bucket(j->second, fvs, g, added_edges);
 
   // remove the oldest hash function and associated hash table
   // replaced by the new ones
@@ -313,6 +317,9 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   hfs.erase(oldest_hf);
   hts[hash_table.get_id()] = hash_table;
   hfs[hash_fun.get_id()] = hash_fun;
+
+  // update the database
+  eng.process_refresh(hash_fun, hash_fun_file, fvs, added_edges);
 }
  
 /*

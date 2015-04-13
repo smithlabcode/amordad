@@ -52,6 +52,12 @@ operator<<(std::ostream &os, const Result &r) {
 }
 
 
+std::ostream &
+operator<<(std::ostream &os, const Edge &e) {
+  return os << e.src << "->" << e.dst << '\t' << e.dist;
+}
+
+
 EngineDB:: EngineDB(const std::string db, const std::string server, 
            const std::string user, const std::string pass) :
   db(db), server(server), user(user), pass(pass) { 
@@ -89,6 +95,38 @@ EngineDB::process_insertion( const FeatureVector &fv,
   // insert fv_id and its neighbor to graph
   for (size_t i = 0; i < neighbors.size(); ++i)
     insert_graph_edge(fv.get_id(), neighbors[i].id, neighbors[i].val);
+
+  trans.commit();
+  return true;
+}
+
+
+bool 
+EngineDB::process_refresh(const LSHAngleHashFunction &hf, 
+                          const std::string &path,
+                          const FeatVecLookup &fvs,
+                          const std::vector<Edge> &added_edges) {
+
+  mysqlpp::Transaction trans(conn, 
+      mysqlpp::Transaction::serializable,
+      mysqlpp::Transaction::session);
+
+  // insert new hash function and its path to hash_function
+  insert_hash_function(hf.get_id(), hf_path);
+
+  // insert fv_id and its hash value for each fv
+  for (FeatVecLookup::const_iterator i(fvs.begin());
+      i != fvs.end(); ++i) {
+    size_t hash_value = hf(i->second);
+    insert_hash_occupant(hf.get_id(), hash_value, i->first);
+  }
+
+  // insert updated edges to graph
+  for (size_t i = 0; i < added_edges.size(); ++i)
+    insert_graph_edge(added_edges[i].src, added_edges[i].dst, added_edges[i].dist);
+
+  // delete the oldest hash function
+  delete_oldest_hash_function();
 
   trans.commit();
   return true;
@@ -174,4 +212,13 @@ EngineDB::get_oldest_hash_function() {
     << mysqlpp::quote << hf_id;
   // return query.execute();
   return string("oldest_hf");
+}
+
+
+bool 
+EngineDB::delete_oldest_hash_function() {
+
+  mysqlpp::Query query = conn.query();
+  query << "delete from hash_function order by update_time asc limit 1"; 
+  return query.execute();
 }

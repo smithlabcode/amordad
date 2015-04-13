@@ -37,14 +37,27 @@ struct Result {
   std::string id;
   double val;
 };
+
 std::ostream &
 operator<<(std::ostream &os, const Result &r);
+
+struct Edge {
+  Edge(const std::string &u, const std::string &v, const double d) 
+    : src(u), dst(v), val(d) {}
+  Edge() : dist(std::numeric_limits<double>::max()) {}
+  std::string src;
+  std::string dst;
+  double dist;
+};
+
+std::ostream &
+operator<<(std::ostream &os, const Edge &e);
 
 
 class LSHAngleHashFunction;
 class FeatureVector;
 typedef std::tr1::unordered_map<std::string, LSHAngleHashFunction> HashFunLookup;
-
+typedef std::tr1::unordered_map<std::string, FeatureVector> FeatVecLookup;
 
 class EngineDB {
 public:
@@ -53,9 +66,15 @@ public:
            const std::string user, const std::string pass);
 
   bool process_deletion(const std::string &fv_id);
+
   bool process_insertion(const FeatureVector &fv, const std::string &path,
                          const HashFunLookup &hfs,
                          const std::vector<Result> &neighbors);
+
+  bool process_refresh(const LSHAngleHashFunction &hf, const std::string &path,
+                       const FeatVecLookup &fvs,
+                       const std::vector<Edge> &added_edges);
+
   std::string get_oldest_hash_function();
 
 private:
@@ -74,6 +93,7 @@ private:
                          const double dist);
   bool insert_hash_function(const std::string &hf_id, const std::string &path);
   bool delete_hash_function(const std::string &hf_id);
+  bool delete_oldest_hash_function();
 
  };
 
