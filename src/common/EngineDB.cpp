@@ -35,10 +35,6 @@
 #include "FeatureVector.hpp"
 
 using std::string;
-using std::cout;
-using std::cerr;
-using std::endl;
-
 
 std::ostream &
 operator<<(std::ostream &os, const Result &r) {
@@ -55,9 +51,10 @@ operator<<(std::ostream &os, const Edge &e) {
 EngineDB:: EngineDB(const std::string db, const std::string server, 
            const std::string user, const std::string pass) :
   db(db), server(server), user(user), pass(pass) { 
+
     conn.set_option(new mysqlpp::MultiStatementsOption(true));
     if(!conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str()))
-      std::cerr << "DB connection failed: " << conn.error() << std::endl;
+      throw SMITHLABException("Cannot connect the database");
 }
 
 
@@ -76,7 +73,7 @@ EngineDB::process_insertion( const FeatureVector &fv,
       mysqlpp::Transaction::serializable,
       mysqlpp::Transaction::session);
 
-  // insert fv_id and path to table feature vector
+  // insert fv_id and path to table feature_vector
   insert_feature_vec(fv.get_id(), path);
 
   // insert fv_id and its hash value to each hash table

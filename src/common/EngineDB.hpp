@@ -22,7 +22,7 @@
 #ifndef ENGINE_DB
 #define ENGINE_DB
 
-#include </usr/include/mysql++/mysql++.h>
+#include <mysql++/mysql++.h>
 
 #include <string>
 #include <vector>
