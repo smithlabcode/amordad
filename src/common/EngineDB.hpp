@@ -84,6 +84,7 @@ private:
   std::string pass;
   mysqlpp::Connection conn;
 
+public: // for test
   bool delete_feature_vec(const std::string &fv_id);
   bool insert_feature_vec(const std::string &fv_id, const std::string &path);
   bool insert_hash_occupant(const std::string &hf_id, const size_t hash_value, 

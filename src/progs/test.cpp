@@ -12,10 +12,11 @@ int main() {
   string pass = "580230mysql";
 
   EngineDB eng(db,server,user,pass);
-  string id, path;
-  std::cout << "input:" << std::endl;
-  while(cin >> id >> path) {
-    eng.insert_feature_vec(id, path);
-    std::cout << "input:" << std::endl;
-  }
+
+  // test get_oldest_hash_function
+  string oldest_hf = eng.get_oldest_hash_function();
+  if(oldest_hf != "")
+    cout << oldest_hf << endl;
+  else
+    cout << "No hash function in the database" << endl;
 }

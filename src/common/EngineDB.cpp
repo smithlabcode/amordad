@@ -202,11 +202,13 @@ EngineDB::get_oldest_hash_function() {
   mysqlpp::Query query = conn.query();
   query << "select id from hash_function order by update_time asc limit 1"; 
   if(mysqlpp::StoreQueryResult res = query.store()) {
-    res[0][0].to_string(old_hash);
-    return old_hash;
+    if(res.num_rows() > 0) {
+      res[0][0].to_string(old_hash);
+      return old_hash;
+    }
   }
   else
-    throw SMITHLABException("No hash function in database");
+    throw SMITHLABException("Failed to retrive hash functions");
   return old_hash;
 }
 
