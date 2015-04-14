@@ -178,7 +178,7 @@ EngineDB::insert_hash_function(const std::string &hf_id,
                                const std::string &path) {
 
   mysqlpp::Query query = conn.query();
-  query << "insert into hash_function values (" 
+  query << "insert into hash_function (id, path) values (" 
     << mysqlpp::quote << hf_id << ","
     << mysqlpp::quote << path << ");";
   return query.execute();
