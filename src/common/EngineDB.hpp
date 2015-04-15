@@ -19,6 +19,7 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #ifndef ENGINE_DB
 #define ENGINE_DB
 
@@ -84,7 +85,6 @@ private:
   std::string pass;
   mysqlpp::Connection conn;
 
-public: // for test
   bool delete_feature_vec(const std::string &fv_id);
   bool insert_feature_vec(const std::string &fv_id, const std::string &path);
   bool insert_hash_occupant(const std::string &hf_id, const size_t hash_value, 
@@ -95,7 +95,6 @@ public: // for test
   bool insert_hash_function(const std::string &hf_id, const std::string &path);
   bool delete_hash_function(const std::string &hf_id);
   bool delete_oldest_hash_function();
-
- };
+};
 
 #endif

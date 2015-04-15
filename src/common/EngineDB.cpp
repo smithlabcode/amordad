@@ -49,7 +49,7 @@ operator<<(std::ostream &os, const Edge &e) {
 
 
 EngineDB:: EngineDB(const std::string db, const std::string server, 
-           const std::string user, const std::string pass) :
+                    const std::string user, const std::string pass) :
   db(db), server(server), user(user), pass(pass) { 
 
     conn.set_option(new mysqlpp::MultiStatementsOption(true));
@@ -64,7 +64,7 @@ EngineDB::process_deletion(const std::string &fv_id) {
 }
   
 
-bool 
+bool
 EngineDB::process_insertion( const FeatureVector &fv, 
                              const std::string &path,
                              const HashFunLookup &hfs,
@@ -92,7 +92,7 @@ EngineDB::process_insertion( const FeatureVector &fv,
 }
 
 
-bool 
+bool
 EngineDB::process_refresh(const LSHAngleHashFunction &hf, 
                           const std::string &path,
                           const FeatVecLookup &fvs,
