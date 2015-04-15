@@ -33,8 +33,11 @@
 
 #include "LSHAngleHashFunction.hpp"
 #include "FeatureVector.hpp"
+#include "LSHAngleHashTable.hpp"
+#include "RegularNearestNeighborGraph.hpp"
 
 using std::string;
+using std::cerr;
 
 std::ostream &
 operator<<(std::ostream &os, const Result &r) {
@@ -65,10 +68,10 @@ EngineDB::process_deletion(const std::string &fv_id) {
   
 
 bool
-EngineDB::process_insertion( const FeatureVector &fv, 
-                             const std::string &path,
-                             const HashFunLookup &hfs,
-                             const std::vector<Result> &neighbors) {
+EngineDB::process_insertion(const FeatureVector &fv, 
+                            const std::string &path,
+                            const HashFunLookup &hfs,
+                            const std::vector<Result> &neighbors) {
   mysqlpp::Transaction trans(conn, 
       mysqlpp::Transaction::serializable,
       mysqlpp::Transaction::session);
@@ -121,6 +124,44 @@ EngineDB::process_refresh(const LSHAngleHashFunction &hf,
 
   trans.commit();
   return true;
+}
+
+
+bool
+EngineDB::initialize_db(const PathLookup &fv_paths,
+                        const PathLookup &hf_paths,
+                        const HashTabLookup &hts, 
+                        const RegularNearestNeighborGraph &g) {
+
+  // insert feature vectors
+  for (PathLookup::const_iterator i(fv_paths.begin());
+       i != fv_paths.end(); ++i)
+    insert_feature_vec(i->first, i->second);
+
+  // insert hash functions
+  for (PathLookup::const_iterator i(hf_paths.begin());
+       i != hf_paths.end(); ++i)
+    insert_hash_function(i->first, i->second);
+
+  // insert buckets info
+  for (HashTabLookup::const_iterator i(hts.begin());
+       i != hts.end(); ++i)
+    for (BucketMap::const_iterator j(i->second.begin());
+         j != i->second.end(); ++j)
+      for (size_t k = 0; k < j->second.size(); ++k) 
+        insert_hash_occupant(i->first, j->first, j->second[k]);
+
+  // insert graph edges
+  for (PathLookup::const_iterator i(fv_paths.begin());
+       i != fv_paths.end(); ++i) {
+    vector<string> neighbors;
+    vector<double> distances;
+    g.get_neighbors(i->first, neighbors, distances);
+    if(neighbors.size() != distances.size())
+      throw SMITHLABException("neighbors size must be equal to distances size");
+    for (size_t j = 0; j < neighbors.size(); ++j)
+      insert_graph_edge(i->first, neighbors[j], distances[j]);
+  }
 }
 
 

@@ -56,9 +56,13 @@ operator<<(std::ostream &os, const Edge &e);
 
 
 class LSHAngleHashFunction;
+class LSHAngleHashTable;
 class FeatureVector;
+class RegularNearestNeighborGraph;
 typedef std::tr1::unordered_map<std::string, LSHAngleHashFunction> HashFunLookup;
+typedef std::tr1::unordered_map<std::string, LSHAngleHashTable> HashTabLookup;
 typedef std::tr1::unordered_map<std::string, FeatureVector> FeatVecLookup;
+typedef std::tr1::unordered_map<std::string, std::string> PathLookup;
 
 class EngineDB {
 public:
@@ -77,6 +81,12 @@ public:
                        const std::vector<Edge> &added_edges);
 
   std::string get_oldest_hash_function();
+
+  bool initialize_db(const PathLookup &fv_paths,
+                     const PathLookup &hf_paths,
+                     const HashTabLookup &hts, 
+                     const RegularNearestNeighborGraph &g);
+
 
 private:
   std::string db;

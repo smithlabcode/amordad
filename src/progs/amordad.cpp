@@ -362,7 +362,8 @@ get_filenames(const string &path_file, vector<string> &file_names) {
 
 static void
 get_database(const bool VERBOSE, const string &db_file,
-             unordered_map<string, FeatureVector> &db) {
+             unordered_map<string, FeatureVector> &db,
+             unordered_map<string, string> &paths) {
 
   vector<string> fv_files;
   get_filenames(db_file, fv_files);
@@ -374,6 +375,7 @@ get_database(const bool VERBOSE, const string &db_file,
       throw SMITHLABException("bad feature vector file: " + fv_files[i]);
     in >> fv;
     db[fv.get_id()] = fv;
+    paths[fv.get_id()] = fv_files[i];
     if (VERBOSE)
       cerr << "\rloading feature vectors: "
            << percent(i, fv_files.size()) << "%\r";
@@ -421,13 +423,7 @@ execute_commands(const string &command_file,
     commands.push_back(make_pair(operation, query_path));
   }
 
-  string db = "amorgin";
-  string server = "localhost";
-  string user = "root";
-  string pass = "580230mysql";
-
-  EngineDB eng(db,server,user,pass);
-
+  
   for(size_t i = 0; i < commands.size(); ++i) {
 
     // execute different functions based on the command
@@ -505,7 +501,8 @@ main(int argc, const char **argv) {
 
     // reading samples in database
     unordered_map<string, FeatureVector> fv_lookup;
-    get_database(VERBOSE, fv_paths_file, fv_lookup);
+    unordered_map<string, string> fv_path_lookup;
+    get_database(VERBOSE, fv_paths_file, fv_lookup, fv_path_lookup);
 
     vector<string> hash_function_files, hash_table_files;
     get_filenames(hf_paths_file, hash_function_files);
@@ -535,6 +532,7 @@ main(int argc, const char **argv) {
 
     //loading hash functions
     unordered_map<string, LSHFun> hf_lookup;
+    unordered_map<string, string> hf_path_lookup;
     for (size_t i = 0; i < hash_function_files.size(); ++i) {
       std::ifstream hf_in(hash_function_files[i].c_str());
       if (!hf_in)
@@ -543,6 +541,7 @@ main(int argc, const char **argv) {
       LSHFun hf;
       hf_in >> hf;
       hf_lookup[hf.get_id()] = hf;
+      hf_path_lookup[hf.get_id()] = hash_function_files[i];
       if (VERBOSE)
         cerr << '\r' << "load hash functions: "
              << percent(i, hash_function_files.size()) << "%\r";
@@ -574,10 +573,25 @@ main(int argc, const char **argv) {
       cerr << "database loaded" << endl;
 
     ////////////////////////////////////////////////////////////////////////
+    ///// INITIALIZE THE ENGINE DATABASE ///////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+
+    string db = "amorgin";
+    string server = "localhost";
+    string user = "root";
+    string pass = "580230mysql";
+
+    EngineDB eng(db,server,user,pass);
+
+    eng.initialize_db(fv_path_lookup, hf_path_lookup,
+                      ht_lookup, nng);
+
+
+    ////////////////////////////////////////////////////////////////////////
     ///// EXECUTE THE COMMANDS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    execute_commands(command_file, fv_lookup, hf_lookup, ht_lookup, nng);
+    execute_commands(command_file, fv_lookup, hf_lookup, ht_lookup, nng, eng);
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
