@@ -55,6 +55,17 @@ LSHAngleHashTable::insert(const FeatureVector &fv, const size_t hash_key) {
     x->second.push_back(fv.get_id());
 }
 
+
+void
+LSHAngleHashTable::insert(const string &fv_id, const size_t hash_key) {
+  const BucketMap::iterator x(buckets.find(hash_key));
+  if (x == buckets.end())
+    buckets[hash_key] = vector<string>(1, fv_id);
+  else 
+    x->second.push_back(fv_id);
+}
+
+
 void
 LSHAngleHashTable::remove(const FeatureVector &fv, const size_t hash_key) {
   const BucketMap::iterator x(buckets.find(hash_key));
