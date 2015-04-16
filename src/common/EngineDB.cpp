@@ -421,3 +421,16 @@ EngineDB::get_graph(RegularNearestNeighborGraph &nng) {
 
   get_graph_edges(nng);
 }
+
+
+size_t
+EngineDB::get_num_hash_functions() {
+
+  mysqlpp::Query query = conn.query();
+  query << "select count(*) from hash_function";
+  if(mysqlpp::StoreQueryResult res = query.store())
+    return res[0][0];
+  else
+    throw SMITHLABException("Failed to retrive hash functions");
+  return 0;
+}
