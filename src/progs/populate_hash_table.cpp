@@ -99,8 +99,8 @@ main(int argc, const char **argv) {
     std::ifstream hash_fun_in(hash_function_file.c_str());
     if (!hash_fun_in)
       throw SMITHLABException("cannot open: " + hash_function_file);
-    // LSHAngleHashFunction hash_fun;
-    LSHEuclideanHashFunction hash_fun;
+    LSHAngleHashFunction hash_fun;
+    // LSHEuclideanHashFunction hash_fun;
     hash_fun_in >> hash_fun;
     
 
