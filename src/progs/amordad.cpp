@@ -402,7 +402,8 @@ execute_commands(const string &command_file,
                  unordered_map<string, FeatureVector> &fvs,
                  unordered_map<string, LSHFun> &hfs,
                  unordered_map<string, LSHTab> &hts,
-                 RegularNearestNeighborGraph &g) {
+                 RegularNearestNeighborGraph &g,
+                 EngineDB &eng) {
 
   size_t n_neighbors = 20;
   double max_proximity_radius = 0.75;

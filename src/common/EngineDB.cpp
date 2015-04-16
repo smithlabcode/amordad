@@ -38,6 +38,7 @@
 
 using std::string;
 using std::cerr;
+using std::vector;
 
 std::ostream &
 operator<<(std::ostream &os, const Result &r) {
@@ -131,7 +132,7 @@ bool
 EngineDB::initialize_db(const PathLookup &fv_paths,
                         const PathLookup &hf_paths,
                         const HashTabLookup &hts, 
-                        const RegularNearestNeighborGraph &g) {
+                        RegularNearestNeighborGraph &g) {
 
   // insert feature vectors
   for (PathLookup::const_iterator i(fv_paths.begin());

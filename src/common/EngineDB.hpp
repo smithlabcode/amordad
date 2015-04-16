@@ -85,7 +85,7 @@ public:
   bool initialize_db(const PathLookup &fv_paths,
                      const PathLookup &hf_paths,
                      const HashTabLookup &hts, 
-                     const RegularNearestNeighborGraph &g);
+                     RegularNearestNeighborGraph &g);
 
 
 private:
