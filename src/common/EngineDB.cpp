@@ -227,6 +227,12 @@ EngineDB::read_db(PathLookup &fv_paths,
     get_hash_table(hash_table);
     hts[hash_table.get_id()] = hash_table;
   }
+
+  for(PathLookup::const_iterator i(fv_paths.begin());
+      i != fv_paths.end(); ++i)
+    g.add_vertex(i->first);
+  
+  get_graph_edges(g);
 }
 
 
@@ -382,4 +388,36 @@ EngineDB::get_hash_table(LSHAngleHashTable &ht) {
   }
   else
     throw SMITHLABException("Failed to retrive hash functions");
+}
+
+
+void
+EngineDB::get_graph_edges(RegularNearestNeighborGraph &nng) {
+
+  mysqlpp::Query query = conn.query();
+  query << "select src, dst, dist from graph_edge";
+  if(mysqlpp::StoreQueryResult res = query.store()) {
+    for(size_t i = 0; i < res.num_rows(); ++i) {
+      string src = "";
+      res[i][0].to_string(src);
+      string dst = "";
+      res[i][1].to_string(dst);
+      double dist = res[i][2];
+      nng.update_vertex(src, dst, dist);
+    }
+  }
+  else
+    throw SMITHLABException("Failed to retrive hash functions");
+}
+
+
+void
+EngineDB::get_graph(RegularNearestNeighborGraph &nng) {
+  PathLookup fv_paths;
+  get_feature_vecs(fv_paths);
+  for(PathLookup::const_iterator i(fv_paths.begin());
+      i != fv_paths.end(); ++i)
+    nng.add_vertex(i->first);
+
+  get_graph_edges(nng);
 }
