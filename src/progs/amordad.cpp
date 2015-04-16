@@ -415,6 +415,27 @@ execute_commands(const string &command_file,
 }
 
 
+static
+void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
+                        const string &feature_set_id, const string &hfs_dir, 
+                        unordered_map<string, string> &hf_paths) {
+
+  for(size_t i = 0; i < qsize; ++i) {
+    string id = "hf_" + toa(i);
+    const LSHAngleHashFunction hash_function(id, feature_set_id,
+                                             n_features, n_bits);
+    std::ofstream of;
+    string outfile = path_join(hfs_dir,id);
+    outfile = outfile + ".hf";
+    if (!outfile.empty()) of.open(outfile.c_str());
+    if (!of) throw SMITHLABException("cannot write to file: " + outfile);
+    std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
+
+    out << hash_function << endl;
+    hf_paths[hash_function.get_id()] = outfile;
+  }
+}
+
 int
 main(int argc, const char **argv) {
 
@@ -422,16 +443,31 @@ main(int argc, const char **argv) {
 
     bool VERBOSE = false;
 
+    size_t n_bits = 0;
+    size_t n_features = 0;
+    string feature_set_id;
+
     string graph_name("THE_GRAPH");
     size_t max_degree = 1;
+
+    size_t hf_queue_size = 0;
+    string hf_dir;
+
+    string command;
     
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
                            "insertion, deletion and refresh with "
                            "database residing on mysql");
 
+    opt_parse.add_opt("fs", 'f', "feature set id", true, feature_set_id);
+    opt_parse.add_opt("bits", 'b', "bits in hash value", true, n_bits);
+    opt_parse.add_opt("nfeat", 'n', "number of features", true, n_features);
     opt_parse.add_opt("name", 'n', "name for the graph", false, graph_name);
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
+    opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
+    opt_parse.add_opt("hfdir", 'h', "folder for hash functions", false, hf_dir);
+    opt_parse.add_opt("com", 'c', "command file", false, command);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
 
     vector<string> leftover_args;
@@ -451,6 +487,8 @@ main(int argc, const char **argv) {
     }
     /****************** END COMMAND LINE OPTIONS *****************/
 
+    if(!validate_file(command, 'r'))
+      throw SMITHLABException("bad command file:" + command);
 
     ////////////////////////////////////////////////////////////////////////
     ///// READ DATA FROM ENGINE DATABASE ///////////////////////////////////////
@@ -462,11 +500,18 @@ main(int argc, const char **argv) {
     string pass = "580230mysql";
 
     EngineDB eng(db,server,user,pass);
-
     unordered_map<string, string> fv_path_lookup;
     unordered_map<string, string> hf_path_lookup;
     unordered_map<string, LSHTab> ht_lookup;
     RegularNearestNeighborGraph nng(graph_name, max_degree);
+
+    if(eng.get_num_hash_functions() == 0) {
+      add_hash_functions(hf_queue_size, n_bits, n_features, 
+                         feature_set_id, hf_dir, hf_path_lookup);
+      eng.initialize_db(fv_path_lookup, hf_path_lookup, 
+                        ht_lookup, nng, VERBOSE); 
+    }
+
     eng.read_db(fv_path_lookup, hf_path_lookup, ht_lookup, nng, VERBOSE);
 
 
@@ -503,7 +548,7 @@ main(int argc, const char **argv) {
     ///// EXECUTE THE COMMANDS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    // execute_commands(command_file, fv_lookup, hf_lookup, ht_lookup, nng, eng);
+    execute_commands(command, fv_lookup, hf_lookup, ht_lookup, nng, eng);
     cerr << nng << endl;
   }
   catch (const SMITHLABException &e) {
