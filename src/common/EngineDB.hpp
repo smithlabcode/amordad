@@ -108,7 +108,7 @@ private:
   bool insert_hash_function(const std::string &hf_id, const std::string &path);
   bool delete_hash_function(const std::string &hf_id);
   bool delete_oldest_hash_function();
-public:
+
   void get_feature_vecs(PathLookup &fv_paths);
   void get_hash_funcs(PathLookup &hf_paths);
   void get_hash_table(LSHAngleHashTable &ht);
