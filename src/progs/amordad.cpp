@@ -322,63 +322,26 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   eng.process_refresh(hash_fun, hash_fun_file, fvs, added_edges);
 }
  
-/*
- * Config file has this structure:
- * feature_vectors_file: path to file containing filenames of feature vectors
- * hash_functions_file: path to file containing filenames of hash functions
- * hash_tables_file: path to file containing filenames of all hash tables
- * graph_file: the filename for the m-NNG
- */
-static void
-read_config_file(const string &config_file,
-                 string &feature_vectors_file,
-                 string &hash_functions_file,
-                 string &hash_tables_file,
-                 string &graph_file) {
-
-  std::ifstream in(config_file.c_str());
-  if (!in)
-    throw SMITHLABException("bad configuration file: " + config_file);
-
-  getline(in, feature_vectors_file);
-  getline(in, hash_functions_file);
-  getline(in, hash_tables_file);
-  getline(in, graph_file);
-}
-
 
 static void
-get_filenames(const string &path_file, vector<string> &file_names) {
-  std::ifstream in(path_file.c_str());
-  if (!in)
-    throw SMITHLABException("bad path file: " + path_file);
+get_database(const bool VERBOSE, 
+             unordered_map<string, string> &paths,
+             unordered_map<string, FeatureVector> &db) {
 
-  file_names.clear();
-  string line;
-  while (getline(in, line))
-    file_names.push_back(line);
-}
-
-
-static void
-get_database(const bool VERBOSE, const string &db_file,
-             unordered_map<string, FeatureVector> &db,
-             unordered_map<string, string> &paths) {
-
-  vector<string> fv_files;
-  get_filenames(db_file, fv_files);
-
-  for(size_t i = 0; i < fv_files.size(); ++i) {
+  size_t count = 0;
+  for(unordered_map<string, string>::const_iterator i(paths.begin());
+      i != paths.end(); ++i) {
     FeatureVector fv;
-    std::ifstream in(fv_files[i].c_str());
+    std::ifstream in(i->second.c_str());
     if (!in)
-      throw SMITHLABException("bad feature vector file: " + fv_files[i]);
+      throw SMITHLABException("bad feature vector file: " + i->second);
     in >> fv;
+    if(fv.get_id() != i->first)
+      throw SMITHLABException("unconsistent feature vector ids");
     db[fv.get_id()] = fv;
-    paths[fv.get_id()] = fv_files[i];
     if (VERBOSE)
       cerr << "\rloading feature vectors: "
-           << percent(i, fv_files.size()) << "%\r";
+           << percent(count++, paths.size()) << "%\r";
   }
   if (VERBOSE)
     cerr << "\rloading feature vectors: 100%" << endl;
@@ -458,13 +421,19 @@ main(int argc, const char **argv) {
   try {
 
     bool VERBOSE = false;
+
+    string graph_name("THE_GRAPH");
+    size_t max_degree = 1;
     
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
                            "insertion, deletion and refresh with "
-                           "database residing on disk",
-                           "<config-file> <command-file>");
+                           "database residing on mysql");
+
+    opt_parse.add_opt("name", 'n', "name for the graph", false, graph_name);
+    opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
+
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
     if (argc == 1 || opt_parse.help_requested()) {
@@ -480,101 +449,11 @@ main(int argc, const char **argv) {
       cerr << opt_parse.option_missing_message() << endl;
       return EXIT_SUCCESS;
     }
-    if (leftover_args.size() != 2) {
-      cerr << opt_parse.help_message() << endl;
-      return EXIT_SUCCESS;
-    }
-    const string database_config_file(leftover_args.front());
-    const string command_file(leftover_args[1]);
     /****************** END COMMAND LINE OPTIONS *****************/
 
-    if (!validate_file(command_file, 'r'))
-      throw SMITHLABException("bad command file: " + command_file);
-
 
     ////////////////////////////////////////////////////////////////////////
-    ////// READING HASH {FUNCTIONS, TABLES, FEATURE_VECTOR} FILES //////////////
-    ////////////////////////////////////////////////////////////////////////
-
-    string fv_paths_file, hf_paths_file, ht_paths_file, graph_file;
-    read_config_file(database_config_file, fv_paths_file, hf_paths_file,
-                     ht_paths_file, graph_file);
-
-    // reading samples in database
-    unordered_map<string, FeatureVector> fv_lookup;
-    unordered_map<string, string> fv_path_lookup;
-    get_database(VERBOSE, fv_paths_file, fv_lookup, fv_path_lookup);
-
-    vector<string> hash_function_files, hash_table_files;
-    get_filenames(hf_paths_file, hash_function_files);
-    get_filenames(ht_paths_file, hash_table_files);
-
-    ////////////////////////////////////////////////////////////////////////
-    ////// READING THE GRAPH ///////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////
-
-    std::ifstream g_in(graph_file.c_str());
-    if (!g_in)
-      throw SMITHLABException("cannot load graph: " + graph_file);
-
-    RegularNearestNeighborGraph nng;
-    g_in >> nng;
-
-    if (VERBOSE)
-      cerr << "GRAPH: "
-           << "[name=" << nng.get_graph_name() << "]"
-           << "[vertices=" << nng.get_vertex_count() << "]"
-           << "[edges=" << nng.get_edge_count() << "]"
-           << "[max_degree=" << nng.get_maximum_degree() << "]" << endl;
-
-    ////////////////////////////////////////////////////////////////////////
-    ////// READING THE HASH FUNCTIONS //////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////
-
-    //loading hash functions
-    unordered_map<string, LSHFun> hf_lookup;
-    unordered_map<string, string> hf_path_lookup;
-    for (size_t i = 0; i < hash_function_files.size(); ++i) {
-      std::ifstream hf_in(hash_function_files[i].c_str());
-      if (!hf_in)
-        throw SMITHLABException("bad hash function file: " +
-                                hash_function_files[i]);
-      LSHFun hf;
-      hf_in >> hf;
-      hf_lookup[hf.get_id()] = hf;
-      hf_path_lookup[hf.get_id()] = hash_function_files[i];
-      if (VERBOSE)
-        cerr << '\r' << "load hash functions: "
-             << percent(i, hash_function_files.size()) << "%\r";
-    }
-    if (VERBOSE)
-      cerr << "load hash functions: 100% (" << hf_lookup.size() << ")" << endl;
-
-    ////////////////////////////////////////////////////////////////////////
-    ////// READING THE HASH TABLES /////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////
-
-    unordered_map<string, LSHTab> ht_lookup;
-    for (size_t i = 0; i < hash_table_files.size(); ++i) {
-      std::ifstream ht_in(hash_table_files[i].c_str());
-      if (!ht_in)
-        throw SMITHLABException("bad hash table file: " +
-                                hash_table_files[i]);
-      LSHTab ht;
-      ht_in >> ht;
-      ht_lookup[ht.get_id()] = ht;
-      if (VERBOSE)
-        cerr << '\r' << "load hash tables: "
-             << percent(i, hash_table_files.size()) << "%\r";
-    }
-    if (VERBOSE)
-      cerr << "load hash tables: 100% (" << ht_lookup.size() << ")" << endl;
-
-    if (VERBOSE)
-      cerr << "database loaded" << endl;
-
-    ////////////////////////////////////////////////////////////////////////
-    ///// INITIALIZE THE ENGINE DATABASE ///////////////////////////////////////
+    ///// READ DATA FROM ENGINE DATABASE ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
     string db = "amorgin";
@@ -584,15 +463,48 @@ main(int argc, const char **argv) {
 
     EngineDB eng(db,server,user,pass);
 
-    eng.initialize_db(fv_path_lookup, hf_path_lookup,
-                      ht_lookup, nng, VERBOSE);
+    unordered_map<string, string> fv_path_lookup;
+    unordered_map<string, string> hf_path_lookup;
+    unordered_map<string, LSHTab> ht_lookup;
+    RegularNearestNeighborGraph nng(graph_name, max_degree);
+    eng.read_db(fv_path_lookup, hf_path_lookup, ht_lookup, nng, VERBOSE);
 
+
+    // READING SAMPLES IN DATABASE
+    unordered_map<string, FeatureVector> fv_lookup;
+    get_database(VERBOSE, fv_path_lookup, fv_lookup);
+
+    ////////////////////////////////////////////////////////////////////////
+    ////// READING THE HASH FUNCTIONS //////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+
+    //loading hash functions
+    unordered_map<string, LSHFun> hf_lookup;
+    size_t count = 0;
+    for(unordered_map<string, string>::const_iterator i(hf_path_lookup.begin());
+        i != hf_path_lookup.end(); ++i) {
+      std::ifstream hf_in(i->second.c_str());
+      if (!hf_in)
+        throw SMITHLABException("bad hash function file: " +
+                                i->second);
+      LSHFun hf;
+      hf_in >> hf;
+      if(hf.get_id() != i->first) 
+        throw SMITHLABException("unconsistent hash function ids");
+      hf_lookup[hf.get_id()] = hf;
+      if (VERBOSE)
+        cerr << '\r' << "load hash functions: "
+             << percent(count++, hf_path_lookup.size()) << "%\r";
+    }
+    if (VERBOSE)
+      cerr << "load hash functions: 100% (" << hf_lookup.size() << ")" << endl;
 
     ////////////////////////////////////////////////////////////////////////
     ///// EXECUTE THE COMMANDS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    execute_commands(command_file, fv_lookup, hf_lookup, ht_lookup, nng, eng);
+    // execute_commands(command_file, fv_lookup, hf_lookup, ht_lookup, nng, eng);
+    cerr << nng << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
