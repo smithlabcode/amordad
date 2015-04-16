@@ -82,10 +82,11 @@ public:
 
   std::string get_oldest_hash_function();
 
-  bool initialize_db(const PathLookup &fv_paths,
+  void initialize_db(const PathLookup &fv_paths,
                      const PathLookup &hf_paths,
                      const HashTabLookup &hts, 
-                     RegularNearestNeighborGraph &g);
+                     RegularNearestNeighborGraph &g,
+                     bool VERBOSE);
 
 
 private:

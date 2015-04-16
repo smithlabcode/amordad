@@ -585,7 +585,7 @@ main(int argc, const char **argv) {
     EngineDB eng(db,server,user,pass);
 
     eng.initialize_db(fv_path_lookup, hf_path_lookup,
-                      ht_lookup, nng);
+                      ht_lookup, nng, VERBOSE);
 
 
     ////////////////////////////////////////////////////////////////////////

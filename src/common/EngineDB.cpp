@@ -39,6 +39,7 @@
 using std::string;
 using std::cerr;
 using std::vector;
+using std::endl;
 
 std::ostream &
 operator<<(std::ostream &os, const Result &r) {
@@ -128,41 +129,84 @@ EngineDB::process_refresh(const LSHAngleHashFunction &hf,
 }
 
 
-bool
+void
 EngineDB::initialize_db(const PathLookup &fv_paths,
                         const PathLookup &hf_paths,
                         const HashTabLookup &hts, 
-                        RegularNearestNeighborGraph &g) {
+                        RegularNearestNeighborGraph &g,
+                        bool VERBOSE) {
+
+  if(VERBOSE)
+    cerr << "BEGIN INITIALIZING THE ENGINE DB" << endl;
+
+  size_t count = 0;
 
   // insert feature vectors
   for (PathLookup::const_iterator i(fv_paths.begin());
-       i != fv_paths.end(); ++i)
+       i != fv_paths.end(); ++i) {
     insert_feature_vec(i->first, i->second);
+    if (VERBOSE)
+      cerr << '\r' << "insert feature vectors: "
+           << percent(count, fv_paths.size()) << "%\r";
+    count += 1;
+  }
 
+  if (VERBOSE)
+    cerr << "insert feature vectors: 100% (" << fv_paths.size() << ")" << endl;
+
+  count = 0;
   // insert hash functions
   for (PathLookup::const_iterator i(hf_paths.begin());
-       i != hf_paths.end(); ++i)
+       i != hf_paths.end(); ++i) {
     insert_hash_function(i->first, i->second);
+    if (VERBOSE)
+      cerr << '\r' << "insert hash functions: "
+           << percent(count, hf_paths.size()) << "%\r";
+    count += 1;
+  }
+  if (VERBOSE)
+    cerr << "insert hash functions: 100% (" << hf_paths.size() << ")" << endl;
 
+
+  count = 0;
   // insert buckets info
   for (HashTabLookup::const_iterator i(hts.begin());
-       i != hts.end(); ++i)
+       i != hts.end(); ++i) {
     for (BucketMap::const_iterator j(i->second.begin());
          j != i->second.end(); ++j)
       for (size_t k = 0; k < j->second.size(); ++k) 
         insert_hash_occupant(i->first, j->first, j->second[k]);
 
+    if (VERBOSE)
+      cerr << '\r' << "insert hash table buckets: "
+           << percent(count, hts.size()) << "%\r";
+    count += 1;
+  }
+  if (VERBOSE)
+    cerr << "insert hash table buckets: 100% (" << hts.size() << ")" << endl;
+
+
+  count = 0;
   // insert graph edges
   for (PathLookup::const_iterator i(fv_paths.begin());
        i != fv_paths.end(); ++i) {
+
     vector<string> neighbors;
     vector<double> distances;
     g.get_neighbors(i->first, neighbors, distances);
     if(neighbors.size() != distances.size())
       throw SMITHLABException("neighbors size must be equal to distances size");
-    for (size_t j = 0; j < neighbors.size(); ++j)
+
+    for (size_t j = 0; j < neighbors.size(); ++j) {
       insert_graph_edge(i->first, neighbors[j], distances[j]);
+      if (VERBOSE)
+        cerr << '\r' << "insert graph edges: "
+             << percent(count, g.get_edge_count()) << "%\r";
+      count += 1;
+    }
   }
+  if (VERBOSE)
+    cerr << "insert graph edges: 100% (" << g.get_edge_count() << ")" << endl;
 }
 
 
