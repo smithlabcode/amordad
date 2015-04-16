@@ -40,6 +40,11 @@ int main() {
   // eng.insert_feature_vec("fv2", "fp2");
 
   /*** test delete_feature_vec ***/
-  eng.delete_feature_vec("id1");
+  // eng.delete_feature_vec("id1");
 
+  PathLookup fv_paths;
+  eng.get_feature_vecs(fv_paths);
+  for(PathLookup::const_iterator i(fv_paths.begin());
+      i != fv_paths.end(); ++i)
+    cout << i->first << "\t" << i->second << endl;
 }

@@ -88,6 +88,8 @@ public:
                      RegularNearestNeighborGraph &g,
                      bool VERBOSE);
 
+  void read_db(PathLookup &fv_paths, PathLookup &hf_paths, HashTabLookup &hts, 
+               RegularNearestNeighborGraph &g, bool VERBOSE);
 
 private:
   std::string db;
@@ -106,6 +108,8 @@ private:
   bool insert_hash_function(const std::string &hf_id, const std::string &path);
   bool delete_hash_function(const std::string &hf_id);
   bool delete_oldest_hash_function();
+public:
+  void get_feature_vecs(PathLookup &fv_paths);
 };
 
 #endif

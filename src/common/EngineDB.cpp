@@ -19,6 +19,7 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "EngineDB.hpp"
 #include "smithlab_utils.hpp"
 #include "smithlab_os.hpp"
@@ -210,6 +211,16 @@ EngineDB::initialize_db(const PathLookup &fv_paths,
 }
 
 
+void
+EngineDB::read_db(PathLookup &fv_paths, 
+                  PathLookup &hf_paths,
+                  HashTabLookup &hts,
+                  RegularNearestNeighborGraph &g,
+                  bool VERBOSE) {
+
+}
+
+
 bool
 EngineDB::delete_feature_vec(const std::string &fv_id) {
 
@@ -305,4 +316,23 @@ EngineDB::delete_oldest_hash_function() {
   mysqlpp::Query query = conn.query();
   query << "delete from hash_function order by update_time asc limit 1"; 
   return query.execute();
+}
+
+
+void
+EngineDB::get_feature_vecs(PathLookup &fv_paths) {
+
+  mysqlpp::Query query = conn.query();
+  query << "select * from feature_vector"; 
+  if(mysqlpp::StoreQueryResult res = query.store()) {
+    for(size_t i = 0; i < res.num_rows(); ++i) {
+      string id = "";
+      res[i][0].to_string(id);
+      string path = "";
+      res[i][1].to_string(path);
+      fv_paths[id] = path;
+    }
+  }
+  else
+    throw SMITHLABException("Failed to retrive hash functions");
 }
