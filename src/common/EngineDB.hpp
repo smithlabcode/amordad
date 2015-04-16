@@ -111,6 +111,7 @@ private:
 public:
   void get_feature_vecs(PathLookup &fv_paths);
   void get_hash_funcs(PathLookup &hf_paths);
+  void get_hash_table(LSHAngleHashTable &ht);
 };
 
 #endif

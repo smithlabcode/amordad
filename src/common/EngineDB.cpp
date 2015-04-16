@@ -219,6 +219,14 @@ EngineDB::read_db(PathLookup &fv_paths,
                   bool VERBOSE) {
 
   get_feature_vecs(fv_paths);
+  get_hash_funcs(hf_paths);
+
+  for(PathLookup::const_iterator i(hf_paths.begin());
+      i != hf_paths.end(); ++i) {
+    LSHAngleHashTable hash_table(i->first);
+    get_hash_table(hash_table);
+    hts[hash_table.get_id()] = hash_table;
+  }
 }
 
 
@@ -351,6 +359,25 @@ EngineDB::get_hash_funcs(PathLookup &hf_paths) {
       string path = "";
       res[i][1].to_string(path);
       hf_paths[id] = path;
+    }
+  }
+  else
+    throw SMITHLABException("Failed to retrive hash functions");
+}
+
+
+void
+EngineDB::get_hash_table(LSHAngleHashTable &ht) {
+
+  mysqlpp::Query query = conn.query();
+  query << "select hash_key, occupant from hash_table_bucket where id = "
+        << mysqlpp::quote << ht.get_id();
+  if(mysqlpp::StoreQueryResult res = query.store()) {
+    for(size_t i = 0; i < res.num_rows(); ++i) {
+      size_t hash_key = res[i][0];
+      string occupant = "";
+      res[i][1].to_string(occupant);
+      ht.insert(occupant, hash_key);
     }
   }
   else
