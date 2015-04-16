@@ -218,6 +218,7 @@ EngineDB::read_db(PathLookup &fv_paths,
                   RegularNearestNeighborGraph &g,
                   bool VERBOSE) {
 
+  get_feature_vecs(fv_paths);
 }
 
 
@@ -323,7 +324,7 @@ void
 EngineDB::get_feature_vecs(PathLookup &fv_paths) {
 
   mysqlpp::Query query = conn.query();
-  query << "select * from feature_vector"; 
+  query << "select id, path from feature_vector"; 
   if(mysqlpp::StoreQueryResult res = query.store()) {
     for(size_t i = 0; i < res.num_rows(); ++i) {
       string id = "";
@@ -331,6 +332,25 @@ EngineDB::get_feature_vecs(PathLookup &fv_paths) {
       string path = "";
       res[i][1].to_string(path);
       fv_paths[id] = path;
+    }
+  }
+  else
+    throw SMITHLABException("Failed to retrive hash functions");
+}
+
+
+void
+EngineDB::get_hash_funcs(PathLookup &hf_paths) {
+
+  mysqlpp::Query query = conn.query();
+  query << "select id, path from hash_function"; 
+  if(mysqlpp::StoreQueryResult res = query.store()) {
+    for(size_t i = 0; i < res.num_rows(); ++i) {
+      string id = "";
+      res[i][0].to_string(id);
+      string path = "";
+      res[i][1].to_string(path);
+      hf_paths[id] = path;
     }
   }
   else
