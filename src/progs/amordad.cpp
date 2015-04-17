@@ -523,7 +523,6 @@ main(int argc, const char **argv) {
     ////// READING THE HASH FUNCTIONS //////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    //loading hash functions
     unordered_map<string, LSHFun> hf_lookup;
     size_t count = 0;
     for(unordered_map<string, string>::const_iterator i(hf_path_lookup.begin());
@@ -549,7 +548,6 @@ main(int argc, const char **argv) {
     ////////////////////////////////////////////////////////////////////////
 
     execute_commands(command, fv_lookup, hf_lookup, ht_lookup, nng, eng);
-    cerr << nng << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
