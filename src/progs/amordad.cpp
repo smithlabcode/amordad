@@ -445,7 +445,7 @@ main(int argc, const char **argv) {
 
     size_t n_bits = 0;
     size_t n_features = 0;
-    string feature_set_id;
+    string feature_set_id = "features";
 
     string graph_name("THE_GRAPH");
     size_t max_degree = 1;
@@ -460,10 +460,10 @@ main(int argc, const char **argv) {
                            "insertion, deletion and refresh with "
                            "database residing on mysql");
 
-    opt_parse.add_opt("fs", 'f', "feature set id", true, feature_set_id);
+    // opt_parse.add_opt("fs", 'f', "feature set id", true, feature_set_id);
     opt_parse.add_opt("bits", 'b', "bits in hash value", true, n_bits);
     opt_parse.add_opt("nfeat", 'n', "number of features", true, n_features);
-    opt_parse.add_opt("name", 'n', "name for the graph", false, graph_name);
+    // opt_parse.add_opt("name", 'n', "name for the graph", false, graph_name);
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
     opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
     opt_parse.add_opt("hfdir", 'h', "folder for hash functions", false, hf_dir);
