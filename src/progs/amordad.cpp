@@ -312,11 +312,13 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   // replaced by the new ones
 
   string oldest_hf = eng.get_oldest_hash_function();
-  unordered_map<string, LSHTab>::const_iterator ht(hts.find(oldest_hf));
-  hts.erase(ht->first);
+  cerr << oldest_hf << endl;
+  hts.erase(oldest_hf);
   hfs.erase(oldest_hf);
   hts[hash_table.get_id()] = hash_table;
   hfs[hash_fun.get_id()] = hash_fun;
+  cerr << "hts size:" << hts.size() << endl;
+  cerr << "hfs size:" << hfs.size() << endl;
 
   // update the database
   eng.process_refresh(hash_fun, hash_fun_file, fvs, added_edges);
