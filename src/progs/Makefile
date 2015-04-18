@@ -27,8 +27,8 @@ PROGS = build_graph_naively naive_batch_query \
 				amordad_batch_delete \
 				amordad_batch_refresh \
 				simulate_feature_vector\
-				amordad
-				# test
+				amordad\
+				test
 #
 # PROGS = test
 ifndef SMITHLAB_CPP

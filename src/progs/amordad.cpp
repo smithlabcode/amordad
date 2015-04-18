@@ -297,6 +297,9 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   LSHAngleHashFunction hash_fun;
   hash_fun_in >> hash_fun;
 
+  if(hfs.find(hash_fun.get_id()) != hfs.end())
+    throw SMITHLABException("attempt to insert an existing hash function");
+
   // INITIALIZE THE HASH TABLE
   LSHAngleHashTable hash_table(hash_fun.get_id());
   for (unordered_map<string, FeatureVector>::const_iterator i(fvs.begin());
@@ -312,13 +315,10 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   // replaced by the new ones
 
   string oldest_hf = eng.get_oldest_hash_function();
-  cerr << oldest_hf << endl;
   hts.erase(oldest_hf);
   hfs.erase(oldest_hf);
   hts[hash_table.get_id()] = hash_table;
   hfs[hash_fun.get_id()] = hash_fun;
-  cerr << "hts size:" << hts.size() << endl;
-  cerr << "hfs size:" << hfs.size() << endl;
 
   // update the database
   eng.process_refresh(hash_fun, hash_fun_file, fvs, added_edges);

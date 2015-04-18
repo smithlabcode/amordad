@@ -2,6 +2,8 @@
 #include <iomanip>
 #include <string>
 #include "EngineDB.hpp"
+#include "LSHAngleHashTable.hpp"
+#include "RegularNearestNeighborGraph.hpp"
 
 using namespace std;
 
@@ -42,9 +44,19 @@ int main() {
   /*** test delete_feature_vec ***/
   // eng.delete_feature_vec("id1");
 
-  PathLookup fv_paths;
-  eng.get_feature_vecs(fv_paths);
-  for(PathLookup::const_iterator i(fv_paths.begin());
-      i != fv_paths.end(); ++i)
-    cout << i->first << "\t" << i->second << endl;
+  // PathLookup fv_paths;
+  // eng.get_hash_funcs(fv_paths);
+  // for(PathLookup::const_iterator i(fv_paths.begin());
+  //     i != fv_paths.end(); ++i)
+  //   cout << i->first << "\t" << i->second << endl;
+  // LSHAngleHashTable ht("hf_15_85");
+  // eng.get_hash_table(ht);
+  // cout << ht;
+
+
+  // RegularNearestNeighborGraph nng("nng_0", 4);
+  // eng.get_graph(nng);
+  // cout << nng << endl;
+
+  cout << eng.get_num_hash_functions() << endl;
 }
