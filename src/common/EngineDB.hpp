@@ -81,6 +81,7 @@ public:
                        const std::vector<Edge> &added_edges);
 
   std::string get_oldest_hash_function();
+  std::string get_newest_hash_function();
   size_t get_num_hash_functions();
 
   void initialize_db(const PathLookup &fv_paths,

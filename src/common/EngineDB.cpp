@@ -58,7 +58,7 @@ EngineDB:: EngineDB(const std::string db, const std::string server,
                     const std::string user, const std::string pass) :
   db(db), server(server), user(user), pass(pass) { 
 
-    conn.set_option(new mysqlpp::MultiStatementsOption(true));
+    // conn.set_option(new mysqlpp::MultiStatementsOption(true));
     if(!conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str()))
       throw SMITHLABException("Cannot connect the database");
 }
@@ -322,6 +322,24 @@ EngineDB::get_oldest_hash_function() {
   else
     throw SMITHLABException("Failed to retrive hash functions");
   return old_hash;
+}
+
+
+string
+EngineDB::get_newest_hash_function() {
+
+  string new_hash = "";
+  mysqlpp::Query query = conn.query();
+  query << "select id from hash_function order by update_time desc limit 1"; 
+  if(mysqlpp::StoreQueryResult res = query.store()) {
+    if(res.num_rows() > 0) {
+      res[0][0].to_string(new_hash);
+      return new_hash;
+    }
+  }
+  else
+    throw SMITHLABException("Failed to retrive hash functions");
+  return new_hash;
 }
 
 
