@@ -303,7 +303,7 @@ RegularNearestNeighborGraph::tostring() const{
   oss << graph_name << '\n'
       << maximum_degree << '\n';
   
-  assert(name_to_index.size() == get_vertex_count());
+  // assert(name_to_index.size() == get_vertex_count());
 
   //removing deleted vertices, mapping old index to new index
   unordered_map<size_t, size_t> old_to_new_index;
