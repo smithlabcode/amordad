@@ -100,7 +100,7 @@ amordad : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
 
 test : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
-	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
+	LSHAngleHashTable.o LSHAngleHashFunction.o)
 
 $(PROGS): $(addprefix $(SMITHLAB_CPP)/, smithlab_os.o \
 	smithlab_utils.o OptionParser.o) \

@@ -27,9 +27,7 @@ OPTFLAGS = -O2
 DEBUGFLAGS = -g
 LIBS = -lmysqlpp
 
-MYSQL = /usr/include/mysql
 INCLUDEDIRS =  $(SMITHLAB_CPP)
-INCLUDEDIRS += $(MYSQL)
 INCLUDEARGS = $(addprefix -I,$(INCLUDEDIRS))
 
 ifdef DEBUG
