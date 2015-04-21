@@ -150,7 +150,7 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
 }
 
 
-static bool
+static void
 write_back(const unordered_map<string, FeatureVector> &fvs,
            const unordered_map<string, LSHTab> &hts,
            const RegularNearestNeighborGraph &g) {
@@ -167,11 +167,14 @@ write_back(const unordered_map<string, FeatureVector> &fvs,
     out << i->first << '\t' << i->first << endl;
   }
 
+  size_t count = 0;
   for(unordered_map<string, LSHTab>::const_iterator i(hts.begin());
       i != hts.end(); ++i) {
     std::ofstream of_h;
-    string outfile_h = "for_test_only.out";
-    if (!outfile_h.empty()) of.open(outfile_h.c_str());
+    string outfile_h = "ht_" + toa(count++);
+    outfile_h += ".ht";
+    // cout << outfile_h << endl;
+    if (!outfile_h.empty()) of_h.open(outfile_h.c_str());
     if (!of_h) throw SMITHLABException("cannot write to file: " + outfile_h);
     std::ostream out_h(outfile_h.empty() ? std::cout.rdbuf() : of_h.rdbuf());
 
@@ -179,7 +182,7 @@ write_back(const unordered_map<string, FeatureVector> &fvs,
   }
 
   std::ofstream of_g;
-  string outfile_g = "for_test_only.out";
+  string outfile_g = "nng.out";
   if (!outfile_g.empty()) of_g.open(outfile_g.c_str());
   if (!of_g) throw SMITHLABException("cannot write to file: " + outfile_g);
   std::ostream out_g(outfile_g.empty() ? std::cout.rdbuf() : of_g.rdbuf());

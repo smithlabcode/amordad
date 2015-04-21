@@ -451,11 +451,12 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
 
 static double get_wall_time() {
   struct timeval time;
-  if(gettimeofday(&time,NULL)) {
+  if(gettimeofday(&time,NULL))
     return 0;
-  }
   return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
+
+
 static double get_cpu_time() {
   return (double)clock() / CLOCKS_PER_SEC;
 }
