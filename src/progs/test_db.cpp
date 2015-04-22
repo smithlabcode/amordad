@@ -479,6 +479,9 @@ main(int argc, const char **argv) {
     size_t hf_queue_size = 0;
     string hf_dir;
 
+    string db;
+    string pass;
+
     string command;
     
     /****************** COMMAND LINE OPTIONS ********************/
@@ -493,6 +496,8 @@ main(int argc, const char **argv) {
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
     opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
     opt_parse.add_opt("hfdir", 'h', "folder for hash functions", false, hf_dir);
+    opt_parse.add_opt("mysql", 'm', "name of the mysql database", true, db);
+    opt_parse.add_opt("pass", 'p', "password for the mysql database", true, pass);
     opt_parse.add_opt("com", 'c', "command file", false, command);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
 
@@ -520,10 +525,8 @@ main(int argc, const char **argv) {
     ///// READ DATA FROM ENGINE DATABASE ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    string db = "amorgin";
     string server = "localhost";
-    string user = "root";
-    string pass = "580230mysql";
+    string user = "wenzhenl";
 
     EngineDB eng(db,server,user,pass);
     unordered_map<string, string> fv_path_lookup;
