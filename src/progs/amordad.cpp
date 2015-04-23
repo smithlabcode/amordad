@@ -41,6 +41,7 @@
 #include "LSHAngleHashFunction.hpp"
 
 #include "EngineDB.hpp"
+#include "crow_all.hpp"
 
 using std::string;
 using std::vector;
@@ -350,73 +351,6 @@ get_database(const bool VERBOSE,
 }
 
 
-static bool
-validate_file(const string &filename, char open_mode) {
-  if (open_mode == 'r')
-    return (get_filesize(filename) > 0);
-  else { // if (open_mode == 'w') {
-    std::ofstream check_out(filename.c_str());
-    if (!check_out) return false;
-    else return true;
-  }
-}
-
-
-static void
-execute_commands(const string &command_file,
-                 unordered_map<string, FeatureVector> &fvs,
-                 unordered_map<string, LSHFun> &hfs,
-                 unordered_map<string, LSHTab> &hts,
-                 RegularNearestNeighborGraph &g,
-                 EngineDB &eng) {
-
-  size_t n_neighbors = 20;
-  double max_proximity_radius = 0.75;
-
-  std::ifstream in(command_file.c_str());
-  if (!in)
-    throw SMITHLABException("bad command file: " + command_file);
-
-  vector<pair<string,string> > commands;
-  string line;
-  while (getline(in, line)) {
-    std::istringstream iss(line);
-    string operation;
-    string query_path;
-    if(!(iss >> operation >> query_path))
-      throw SMITHLABException("bad command format: " + line);
-
-    commands.push_back(make_pair(operation, query_path));
-  }
-
-  
-  for(size_t i = 0; i < commands.size(); ++i) {
-
-    // execute different functions based on the command
-    if(commands[i].first == "query") {
-      FeatureVector fv = get_query(commands[i].second);
-      vector<Result> results;
-      execute_query(fvs, hfs, hts, g, fv, n_neighbors, 
-          max_proximity_radius, results);
-    }
-    else if(commands[i].first == "insert") {
-      string query_path = commands[i].second;
-      execute_insertion(fvs, hfs, hts, g, query_path, n_neighbors, eng); 
-    }
-    else if(commands[i].first == "delete") {
-      FeatureVector fv = get_query(commands[i].second);
-      execute_deletion(fvs, hfs, hts, g, fv, eng); 
-    }
-    else if(commands[i].first == "refresh") {
-      string hash_fun_file = commands[i].second;
-      execute_refresh(fvs, hfs, hts, g, hash_fun_file, eng); 
-    }
-    else
-      throw SMITHLABException("unknown command");
-  }
-}
-
-
 static
 void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
                         const string &feature_set_id, const string &hfs_dir, 
@@ -455,8 +389,6 @@ main(int argc, const char **argv) {
     size_t hf_queue_size = 0;
     string hf_dir;
 
-    string command;
-    
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
                            "insertion, deletion and refresh with "
@@ -469,7 +401,6 @@ main(int argc, const char **argv) {
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
     opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
     opt_parse.add_opt("hfdir", 'h', "folder for hash functions", false, hf_dir);
-    opt_parse.add_opt("com", 'c', "command file", false, command);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
 
     vector<string> leftover_args;
@@ -488,9 +419,6 @@ main(int argc, const char **argv) {
       return EXIT_SUCCESS;
     }
     /****************** END COMMAND LINE OPTIONS *****************/
-
-    if(!validate_file(command, 'r'))
-      throw SMITHLABException("bad command file:" + command);
 
     ////////////////////////////////////////////////////////////////////////
     ///// READ DATA FROM ENGINE DATABASE ///////////////////////////////////////
@@ -546,10 +474,24 @@ main(int argc, const char **argv) {
       cerr << "load hash functions: 100% (" << hf_lookup.size() << ")" << endl;
 
     ////////////////////////////////////////////////////////////////////////
-    ///// EXECUTE THE COMMANDS ///////////////////////////////////////
+    ///// EXECUTE THE REQUESTS FROM URL ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    execute_commands(command, fv_lookup, hf_lookup, ht_lookup, nng, eng);
+    crow::SimpleApp app;
+    CROW_ROUTE(app, "/")
+    ([]() {
+     return "Amordad Web Server";
+     });
+
+    CROW_ROUTE(app, "/insert/<string>")
+    ([&](string fv_path) {
+      execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
+                       nng, fv_path, max_degree, eng);
+      return "Submitted";
+    });
+
+    app.port(18080)
+       .run();
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;

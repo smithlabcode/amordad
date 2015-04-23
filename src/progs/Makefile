@@ -26,8 +26,8 @@ PROGS = build_graph_naively naive_batch_query \
 				amordad_batch_insert \
 				amordad_batch_delete \
 				amordad_batch_refresh \
-				simulate_feature_vector\
-				amordad test test_db test_crow
+				simulate_feature_vector test_crow\
+				# amordad test test_db
 #
 # PROGS = test
 ifndef SMITHLAB_CPP
@@ -43,10 +43,10 @@ INCLUDEDIRS += $(MYSQL)
 INCLUDEARGS = $(addprefix -I,$(INCLUDEDIRS))
 
 CXX = g++
-CXXFLAGS = -Wall -fmessage-length=50
-OPTFLAGS = -O2
+CXXFLAGS = -Wall -fmessage-length=50 -std=c++11
+OPTFLAGS = -O3
 DEBUGFLAGS = -g -pg
-LIBS = -lgsl -lgslcblas -lmysqlpp
+LIBS = -lgsl -lgslcblas -lmysqlpp -lboost_system -lboost_thread -lpthread
 
 # Flags for Mavericks
 ifeq "$(shell uname)" "Darwin"
@@ -98,8 +98,8 @@ amordad_batch_delete : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 amordad : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
 
-test : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
-	LSHAngleHashTable.o LSHAngleHashFunction.o)
+# test : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
+# 	LSHAngleHashTable.o LSHAngleHashFunction.o)
 
 test_db : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
