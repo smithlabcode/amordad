@@ -31,7 +31,7 @@
 using std::vector;
 using std::string;
 using std::pair;
-using std::tr1::unordered_map;
+using std::unordered_map;
 
 using boost::property_map;
 using boost::graph_traits;

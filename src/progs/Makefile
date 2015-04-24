@@ -27,7 +27,7 @@ PROGS = build_graph_naively naive_batch_query \
 				amordad_batch_delete \
 				amordad_batch_refresh \
 				simulate_feature_vector test_crow\
-				# amordad test test_db
+				amordad test_disk test_db
 #
 # PROGS = test
 ifndef SMITHLAB_CPP
@@ -98,8 +98,8 @@ amordad_batch_delete : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 amordad : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
 
-# test : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
-# 	LSHAngleHashTable.o LSHAngleHashFunction.o)
+test_disk : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
+	LSHAngleHashTable.o LSHAngleHashFunction.o)
 
 test_db : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)

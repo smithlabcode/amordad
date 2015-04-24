@@ -21,7 +21,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 #include "OptionParser.hpp"
 #include "smithlab_os.hpp"
@@ -35,7 +35,7 @@ using std::string;
 using std::vector;
 using std::cerr;
 using std::endl;
-using std::tr1::unordered_map;
+using std::unordered_map;
 
 
 int

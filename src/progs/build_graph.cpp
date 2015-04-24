@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <tr1/unordered_set>
+#include <unordered_set>
 
 #include "OptionParser.hpp"
 #include "smithlab_utils.hpp"
@@ -36,8 +36,8 @@ using std::cerr;
 using std::endl;
 using std::cout;
 using std::ifstream;
-using std::tr1::unordered_map;
-using std::tr1::unordered_set;
+using std::unordered_map;
+using std::unordered_set;
 
 
 typedef unordered_map<string, unordered_set<string> > ComparedLookup;

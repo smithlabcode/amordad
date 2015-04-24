@@ -22,7 +22,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <fstream>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>

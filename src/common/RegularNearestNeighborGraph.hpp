@@ -28,8 +28,8 @@
 
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
-#include <tr1/unordered_map>
-#include <tr1/unordered_set>
+#include <unordered_map>
+#include <unordered_set>
 
 typedef 
 boost::adjacency_list<boost::setS, boost::vecS, 
@@ -89,9 +89,9 @@ private:
 
   std::string graph_name;
   internal_graph the_graph;
-  std::tr1::unordered_map<std::string, size_t> name_to_index;
-  std::tr1::unordered_map<size_t, std::string> index_to_name;
-  std::tr1::unordered_set<size_t> indices_deleted;
+  std::unordered_map<std::string, size_t> name_to_index;
+  std::unordered_map<size_t, std::string> index_to_name;
+  std::unordered_set<size_t> indices_deleted;
   size_t maximum_degree;
 
   // lookups

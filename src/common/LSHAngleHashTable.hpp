@@ -26,11 +26,11 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 class FeatureVector;
 
-typedef std::tr1::unordered_map<size_t, std::vector<std::string> > BucketMap;
+typedef std::unordered_map<size_t, std::vector<std::string> > BucketMap;
 
 class LSHAngleHashTable {
 public:

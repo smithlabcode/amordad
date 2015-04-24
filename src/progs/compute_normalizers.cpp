@@ -21,7 +21,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <numeric>
 
 #include <gsl/gsl_histogram.h>
@@ -36,7 +36,7 @@ using std::string;
 using std::vector;
 using std::cerr;
 using std::endl;
-using std::tr1::unordered_map;
+using std::unordered_map;
 using std::accumulate;
 using std::transform;
 

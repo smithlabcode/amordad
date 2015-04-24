@@ -27,7 +27,7 @@
 
 #include <string>
 #include <vector>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <limits>
 
 
@@ -59,10 +59,10 @@ class LSHAngleHashFunction;
 class LSHAngleHashTable;
 class FeatureVector;
 class RegularNearestNeighborGraph;
-typedef std::tr1::unordered_map<std::string, LSHAngleHashFunction> HashFunLookup;
-typedef std::tr1::unordered_map<std::string, LSHAngleHashTable> HashTabLookup;
-typedef std::tr1::unordered_map<std::string, FeatureVector> FeatVecLookup;
-typedef std::tr1::unordered_map<std::string, std::string> PathLookup;
+typedef std::unordered_map<std::string, LSHAngleHashFunction> HashFunLookup;
+typedef std::unordered_map<std::string, LSHAngleHashTable> HashTabLookup;
+typedef std::unordered_map<std::string, FeatureVector> FeatVecLookup;
+typedef std::unordered_map<std::string, std::string> PathLookup;
 
 class EngineDB {
 public:

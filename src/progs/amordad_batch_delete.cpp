@@ -24,7 +24,7 @@
 #include <climits>
 #include <cmath>
 #include <ctime>
-#include <tr1/unordered_set>
+#include <unordered_set>
 #include <cstdio>
 #include <iterator>
 #include <fstream>
@@ -47,8 +47,8 @@ using std::cout;
 using std::pair;
 using std::make_pair;
 
-using std::tr1::unordered_map;
-using std::tr1::unordered_set;
+using std::unordered_map;
+using std::unordered_set;
 
 typedef LSHAngleHashTable LSHTab;
 typedef LSHAngleHashFunction LSHFun;
