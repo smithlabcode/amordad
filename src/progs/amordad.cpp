@@ -109,13 +109,13 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
               const unordered_map<string, LSHFun> &hfs,
               const unordered_map<string, LSHTab> &hts,
               RegularNearestNeighborGraph &g,
-              const FeatureVector &query,
+              const string &query_path,
               const size_t n_neighbors,
               const double max_proximity_radius,
               vector<Result> &results) {
 
+  FeatureVector query = get_query(query_path);
   unordered_set<string> candidates;
-
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::const_iterator i(hts.begin());
        i != hts.end(); ++i) {
@@ -389,10 +389,13 @@ main(int argc, const char **argv) {
     size_t hf_queue_size = 0;
     string hf_dir;
 
+    string db;
+    string pass;
+
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
-                           "insertion, deletion and refresh with "
-                           "database residing on mysql");
+        "insertion, deletion and refresh with "
+        "database residing on mysql");
 
     // opt_parse.add_opt("fs", 'f', "feature set id", true, feature_set_id);
     opt_parse.add_opt("bits", 'b', "bits in hash value", true, n_bits);
@@ -401,7 +404,10 @@ main(int argc, const char **argv) {
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
     opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
     opt_parse.add_opt("hfdir", 'h', "folder for hash functions", false, hf_dir);
+    opt_parse.add_opt("mysql", 'm', "name of the mysql database", true, db);
+    opt_parse.add_opt("pass", 'p', "password for the mysql database", true, pass);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
+
 
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
@@ -483,9 +489,41 @@ main(int argc, const char **argv) {
      return "Amordad Web Server";
      });
 
+    const size_t n_neighbors = 20;
+    const double max_proximity_radius = 0.75;
+    vector<Result> result;
+
+    CROW_ROUTE(app, "/query/<string>")
+    ([&](string fv_path) {
+      execute_query(fv_lookup, hf_lookup, ht_lookup, 
+                    nng, fv_path, n_neighbors, max_proximity_radius,
+                    result);
+      return "Submitted";
+    });
+
+    if(VERBOSE) {
+      copy(result.begin(), result.end(),
+           std::ostream_iterator<Result>(cerr, "\t"));
+      cerr << endl;
+    }
+
     CROW_ROUTE(app, "/insert/<string>")
     ([&](string fv_path) {
       execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
+                       nng, fv_path, max_degree, eng);
+      return "Submitted";
+    });
+
+    CROW_ROUTE(app, "/delete/<string>")
+    ([&](string fv_path) {
+      execute_deletion(fv_lookup, hf_lookup, ht_lookup, 
+                       nng, fv_path, eng);
+      return "Submitted";
+    });
+
+    CROW_ROUTE(app, "/refresh>")
+    ([]() {
+      execute_refresh(fv_lookup, hf_lookup, ht_lookup, 
                        nng, fv_path, max_degree, eng);
       return "Submitted";
     });
