@@ -219,7 +219,17 @@ EngineDB::read_db(PathLookup &fv_paths,
                   bool VERBOSE) {
 
   get_feature_vecs(fv_paths);
+
+  if (VERBOSE)
+    cerr << "reading from db feature vectors: " 
+         << fv_paths.size() << ")" << endl;
+
   get_hash_funcs(hf_paths);
+
+  if (VERBOSE)
+    cerr << "reading from db hash functions: " 
+         << hf_paths.size() << ")" << endl;
+
 
   for(PathLookup::const_iterator i(hf_paths.begin());
       i != hf_paths.end(); ++i) {
