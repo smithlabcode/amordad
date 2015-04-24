@@ -225,8 +225,10 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
                  const unordered_map<string, LSHFun> &hfs,
                  unordered_map<string, LSHTab> &hts,
                  RegularNearestNeighborGraph &g,
-                 const FeatureVector &query,
+                 const string &query_path,
                  EngineDB &eng) {
+
+  FeatureVector query = get_query(query_path);
   
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::iterator i(hts.begin());
@@ -351,6 +353,27 @@ get_database(const bool VERBOSE,
 }
 
 
+// static LSHAngleHashFunction
+// get_hash_function(size_t n_bits, size_t n_features, 
+//                   const string &feature_set_id,
+//                   const string &hfs_dir,
+//                   const size_t next_hf_id) {
+//   string id = "hf_" + toa(next_hf_id);
+//   const LSHAngleHashFunction hash_function(id, feature_set_id,
+//                                            n_features, n_bits);
+//   std::ofstream of;
+//   string outfile = path_join(hfs_dir,id);
+//   outfile = outfile + ".hf";
+//   if (!outfile.empty()) of.open(outfile.c_str());
+//   if (!of) throw SMITHLABException("cannot write to file: " + outfile);
+//   std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
+//
+//   out << hash_function << endl;
+//
+//   return hash_function;
+// }
+//
+
 static
 void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
                         const string &feature_set_id, const string &hfs_dir, 
@@ -430,10 +453,8 @@ main(int argc, const char **argv) {
     ///// READ DATA FROM ENGINE DATABASE ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    string db = "amorgin";
     string server = "localhost";
     string user = "root";
-    string pass = "580230mysql";
 
     EngineDB eng(db,server,user,pass);
     unordered_map<string, string> fv_path_lookup;
@@ -447,6 +468,8 @@ main(int argc, const char **argv) {
       eng.initialize_db(fv_path_lookup, hf_path_lookup, 
                         ht_lookup, nng, VERBOSE); 
     }
+
+    size_t next_hash_fun_id = eng.get_num_hash_functions();
 
     eng.read_db(fv_path_lookup, hf_path_lookup, ht_lookup, nng, VERBOSE);
 
@@ -498,14 +521,14 @@ main(int argc, const char **argv) {
       execute_query(fv_lookup, hf_lookup, ht_lookup, 
                     nng, fv_path, n_neighbors, max_proximity_radius,
                     result);
+      if(VERBOSE) {
+      copy(result.begin(), result.end(),
+        std::ostream_iterator<Result>(cerr, "\t"));
+      cerr << endl;
+      }
+
       return "Submitted";
     });
-
-    if(VERBOSE) {
-      copy(result.begin(), result.end(),
-           std::ostream_iterator<Result>(cerr, "\t"));
-      cerr << endl;
-    }
 
     CROW_ROUTE(app, "/insert/<string>")
     ([&](string fv_path) {
@@ -521,10 +544,12 @@ main(int argc, const char **argv) {
       return "Submitted";
     });
 
-    CROW_ROUTE(app, "/refresh>")
-    ([]() {
-      execute_refresh(fv_lookup, hf_lookup, ht_lookup, 
-                       nng, fv_path, max_degree, eng);
+    CROW_ROUTE(app, "/refresh/<string>")
+    ([&](string hf_path) {
+     // LSHAngleHashFunction hash_fun = get_hash_function(n_bits, n_features, 
+     //   feature_set_id, hfs_dir, next_hash_fun_id);
+     execute_refresh(fv_lookup, hf_lookup, ht_lookup, 
+                       nng, hf_path, eng);
       return "Submitted";
     });
 
