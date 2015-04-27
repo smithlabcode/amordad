@@ -218,16 +218,18 @@ EngineDB::read_db(PathLookup &fv_paths,
                   RegularNearestNeighborGraph &g,
                   bool VERBOSE) {
 
+  size_t count = 0;
+
   get_feature_vecs(fv_paths);
 
   if (VERBOSE)
-    cerr << "reading from db feature vectors: " 
+    cerr << "read from db feature vectors: 100% (" 
          << fv_paths.size() << ")" << endl;
 
   get_hash_funcs(hf_paths);
 
   if (VERBOSE)
-    cerr << "reading from db hash functions: " 
+    cerr << "read from db hash functions: 100% (" 
          << hf_paths.size() << ")" << endl;
 
 
@@ -236,13 +238,23 @@ EngineDB::read_db(PathLookup &fv_paths,
     LSHAngleHashTable hash_table(i->first);
     get_hash_table(hash_table);
     hts[hash_table.get_id()] = hash_table;
+
+    if (VERBOSE)
+      cerr << '\r' << "reading from db hash tables: "
+           << percent(count++, hf_paths.size()) << "%\r";
   }
+
+  if (VERBOSE)
+    cerr << "read from db hash tables: 100% ("
+         << hf_paths.size() << ")" << endl;
 
   for(PathLookup::const_iterator i(fv_paths.begin());
       i != fv_paths.end(); ++i)
     g.add_vertex(i->first);
   
   get_graph_edges(g);
+  if (VERBOSE)
+    cerr << "read from db graph: 100%" << endl;
 }
 
 

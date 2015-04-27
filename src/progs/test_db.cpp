@@ -585,7 +585,7 @@ main(int argc, const char **argv) {
     double cpu1 = get_cpu_time();
 
     cout << "Wall time = " << wall1 - wall0 << endl;
-    cout << "Cpu time = " << cpu1 - cpu0 << endl;
+    cout << "CPU time = " << cpu1 - cpu0 << endl;
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
