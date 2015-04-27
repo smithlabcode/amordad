@@ -423,7 +423,8 @@ execute_commands(const string &command_file,
 static
 void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
                         const string &feature_set_id, const string &hfs_dir, 
-                        unordered_map<string, string> &hf_paths) {
+                        unordered_map<string, string> &hf_paths,
+                        queue<string> hash_functions) {
 
   for(size_t i = 0; i < qsize; ++i) {
     string id = "hf_" + toa(i);
@@ -438,6 +439,7 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
 
     out << hash_function << endl;
     hf_paths[hash_function.get_id()] = outfile;
+    hash_functions.push_back(hash_function.get_id());
   }
 }
 
@@ -513,12 +515,14 @@ main(int argc, const char **argv) {
     EngineDB eng(db,server,user,pass);
     unordered_map<string, string> fv_path_lookup;
     unordered_map<string, string> hf_path_lookup;
+    queue<string> hash_func_queue;
     unordered_map<string, LSHTab> ht_lookup;
     RegularNearestNeighborGraph nng(graph_name, max_degree);
 
     if(eng.get_num_hash_functions() == 0) {
       add_hash_functions(hf_queue_size, n_bits, n_features, 
-                         feature_set_id, hf_dir, hf_path_lookup);
+                         feature_set_id, hf_dir, hf_path_lookup,
+                         hash_func_queue);
       eng.initialize_db(fv_path_lookup, hf_path_lookup, 
                         ht_lookup, nng, VERBOSE); 
     }
