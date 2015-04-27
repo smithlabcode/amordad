@@ -30,7 +30,7 @@
 #include <iterator>
 #include <queue>
 #include <iostream>
-#include <sys/time.h>
+#include <chrono>
 
 #include "OptionParser.hpp"
 #include "smithlab_utils.hpp"
@@ -393,7 +393,6 @@ execute_commands(const string &command_file,
   }
 
   
-  size_t count = 0;
   for(size_t i = 0; i < commands.size(); ++i) {
 
     // execute different functions based on the command
@@ -417,13 +416,7 @@ execute_commands(const string &command_file,
     }
     else
       throw SMITHLABException("unknown command");
-
-    if (VERBOSE)
-      cerr << '\r' << "execute commands: "
-           << percent(count++, commands.size()) << "%\r";
   }
-  if (VERBOSE)
-    cerr << "execute commands: 100% (" << commands.size() << ")" << endl;
 }
 
 
@@ -446,19 +439,6 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
     out << hash_function << endl;
     hf_paths[hash_function.get_id()] = outfile;
   }
-}
-
-
-static double get_wall_time() {
-  struct timeval time;
-  if(gettimeofday(&time,NULL))
-    return 0;
-  return (double)time.tv_sec + (double)time.tv_usec * .000001;
-}
-
-
-static double get_cpu_time() {
-  return (double)clock() / CLOCKS_PER_SEC;
 }
 
 
@@ -578,14 +558,13 @@ main(int argc, const char **argv) {
     ///// EXECUTE THE COMMANDS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    double wall0 = get_wall_time();
-    double cpu0 = get_cpu_time();
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
     execute_commands(command, fv_lookup, hf_lookup, ht_lookup, nng, eng, VERBOSE);
-    double wall1 = get_wall_time();
-    double cpu1 = get_cpu_time();
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
 
-    cout << "Wall time = " << wall1 - wall0 << endl;
-    cout << "CPU time = " << cpu1 - cpu0 << endl;
+    cout << "Wall time = " << elapsed.count() << "s\n";
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;
