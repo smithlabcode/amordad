@@ -488,7 +488,7 @@ EngineDB::get_hash_func_queue(std::queue<std::string> &hf_queue) {
     for(size_t i = 0; i < res.num_rows(); ++i) {
       string id = "";
       res[i][0].to_string(id);
-      hf_queue.push_back(id);
+      hf_queue.push(id);
     }
   }
   else

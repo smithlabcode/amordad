@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <queue>
 #include <limits>
 
 
@@ -90,8 +91,8 @@ public:
                      RegularNearestNeighborGraph &g,
                      bool VERBOSE);
 
-  void read_db(PathLookup &fv_paths, PathLookup &hf_paths, HashTabLookup &hts, 
-               std::queue<std::string> &hf_queue,
+  void read_db(PathLookup &fv_paths, PathLookup &hf_paths,
+               std::queue<std::string> &hf_queue, HashTabLookup &hts, 
                RegularNearestNeighborGraph &g, bool VERBOSE);
 
 private:
