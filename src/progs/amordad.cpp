@@ -50,6 +50,7 @@ using std::endl;
 using std::cout;
 using std::pair;
 using std::make_pair;
+using std::queue;
 
 using std::unordered_map;
 using std::unordered_set;
@@ -288,6 +289,7 @@ add_relations_from_bucket(const vector<string> &bucket,
 static void
 execute_refresh(const unordered_map<string, FeatureVector> &fvs,
                 unordered_map<string, LSHFun> &hfs,
+                queue<string> &hf_queue,
                 unordered_map<string, LSHTab> &hts,
                 RegularNearestNeighborGraph &g,
                 const string &hash_fun_file,
@@ -317,11 +319,13 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   // remove the oldest hash function and associated hash table
   // replaced by the new ones
 
-  string oldest_hf = eng.get_oldest_hash_function();
+  string oldest_hf = hf_queue.front();
+  hf_queue.pop();
   hts.erase(oldest_hf);
   hfs.erase(oldest_hf);
   hts[hash_table.get_id()] = hash_table;
   hfs[hash_fun.get_id()] = hash_fun;
+  hf_queue.push(hash_fun.get_id());
 
   // update the database
   eng.process_refresh(hash_fun, hash_fun_file, fvs, added_edges);
@@ -375,10 +379,12 @@ get_database(const bool VERBOSE,
 // }
 //
 
+
 static
 void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
                         const string &feature_set_id, const string &hfs_dir, 
-                        unordered_map<string, string> &hf_paths) {
+                        unordered_map<string, string> &hf_paths,
+                        queue<string> hash_func_queue) {
 
   for(size_t i = 0; i < qsize; ++i) {
     string id = "hf_" + toa(i);
@@ -393,8 +399,10 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
 
     out << hash_function << endl;
     hf_paths[hash_function.get_id()] = outfile;
+    hash_func_queue.push(hash_function.get_id());
   }
 }
+
 
 int
 main(int argc, const char **argv) {
@@ -461,19 +469,20 @@ main(int argc, const char **argv) {
     EngineDB eng(db,server,user,pass);
     unordered_map<string, string> fv_path_lookup;
     unordered_map<string, string> hf_path_lookup;
+    queue<string> hash_func_queue;
     unordered_map<string, LSHTab> ht_lookup;
     RegularNearestNeighborGraph nng(graph_name, max_degree);
 
     if(eng.get_num_hash_functions() == 0) {
       add_hash_functions(hf_queue_size, n_bits, n_features, 
-                         feature_set_id, hf_dir, hf_path_lookup);
-      eng.initialize_db(fv_path_lookup, hf_path_lookup, 
+                         feature_set_id, hf_dir, hf_path_lookup,
+                         hash_func_queue);
+      eng.initialize_db(fv_path_lookup, hf_path_lookup,
                         ht_lookup, nng, VERBOSE); 
     }
 
-    size_t next_hash_fun_id = eng.get_num_hash_functions();
-
-    eng.read_db(fv_path_lookup, hf_path_lookup, ht_lookup, nng, VERBOSE);
+    eng.read_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
+                ht_lookup, nng, VERBOSE);
 
 
     // READING SAMPLES IN DATABASE
@@ -550,7 +559,7 @@ main(int argc, const char **argv) {
     ([&](string hf_path) {
      // LSHAngleHashFunction hash_fun = get_hash_function(n_bits, n_features, 
      //   feature_set_id, hfs_dir, next_hash_fun_id);
-     execute_refresh(fv_lookup, hf_lookup, ht_lookup, 
+     execute_refresh(fv_lookup, hf_lookup, hash_func_queue, ht_lookup, 
                        nng, hf_path, eng);
       return "Submitted";
     });

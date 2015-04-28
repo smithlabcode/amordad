@@ -51,6 +51,7 @@ using std::endl;
 using std::cout;
 using std::pair;
 using std::make_pair;
+using std::queue;
 
 using std::unordered_map;
 using std::unordered_set;
@@ -287,6 +288,7 @@ add_relations_from_bucket(const vector<string> &bucket,
 static void
 execute_refresh(const unordered_map<string, FeatureVector> &fvs,
                 unordered_map<string, LSHFun> &hfs,
+                queue<string> &hf_queue,
                 unordered_map<string, LSHTab> &hts,
                 RegularNearestNeighborGraph &g,
                 const string &hash_fun_file,
@@ -316,11 +318,13 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   // remove the oldest hash function and associated hash table
   // replaced by the new ones
 
-  string oldest_hf = eng.get_oldest_hash_function();
+  string oldest_hf = hf_queue.front();
+  hf_queue.pop();
   hts.erase(oldest_hf);
   hfs.erase(oldest_hf);
   hts[hash_table.get_id()] = hash_table;
   hfs[hash_fun.get_id()] = hash_fun;
+  hf_queue.push(hash_fun.get_id());
 
   // update the database
   eng.process_refresh(hash_fun, hash_fun_file, fvs, added_edges);
@@ -368,6 +372,7 @@ static void
 execute_commands(const string &command_file,
                  unordered_map<string, FeatureVector> &fvs,
                  unordered_map<string, LSHFun> &hfs,
+                 queue<string> &hf_queue,
                  unordered_map<string, LSHTab> &hts,
                  RegularNearestNeighborGraph &g,
                  EngineDB &eng,
@@ -412,7 +417,7 @@ execute_commands(const string &command_file,
     }
     else if(commands[i].first == "refresh") {
       string hash_fun_file = commands[i].second;
-      execute_refresh(fvs, hfs, hts, g, hash_fun_file, eng); 
+      execute_refresh(fvs, hfs, hf_queue, hts, g, hash_fun_file, eng); 
     }
     else
       throw SMITHLABException("unknown command");
@@ -424,7 +429,7 @@ static
 void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
                         const string &feature_set_id, const string &hfs_dir, 
                         unordered_map<string, string> &hf_paths,
-                        queue<string> hash_functions) {
+                        queue<string> hash_func_queue) {
 
   for(size_t i = 0; i < qsize; ++i) {
     string id = "hf_" + toa(i);
@@ -439,7 +444,7 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
 
     out << hash_function << endl;
     hf_paths[hash_function.get_id()] = outfile;
-    hash_functions.push_back(hash_function.get_id());
+    hash_func_queue.push(hash_function.get_id());
   }
 }
 
@@ -523,11 +528,12 @@ main(int argc, const char **argv) {
       add_hash_functions(hf_queue_size, n_bits, n_features, 
                          feature_set_id, hf_dir, hf_path_lookup,
                          hash_func_queue);
-      eng.initialize_db(fv_path_lookup, hf_path_lookup, 
+      eng.initialize_db(fv_path_lookup, hf_path_lookup,
                         ht_lookup, nng, VERBOSE); 
     }
 
-    eng.read_db(fv_path_lookup, hf_path_lookup, ht_lookup, nng, VERBOSE);
+    eng.read_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
+                ht_lookup, nng, VERBOSE);
 
 
     // READING SAMPLES IN DATABASE
@@ -564,7 +570,8 @@ main(int argc, const char **argv) {
 
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
-    execute_commands(command, fv_lookup, hf_lookup, ht_lookup, nng, eng, VERBOSE);
+    execute_commands(command, fv_lookup, hf_lookup,
+                     hash_func_queue, ht_lookup, nng, eng, VERBOSE);
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
