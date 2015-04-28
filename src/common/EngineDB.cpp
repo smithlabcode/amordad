@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <queue>
 #include <sstream>
 #include <climits>
 #include <numeric>
@@ -41,6 +42,7 @@ using std::string;
 using std::cerr;
 using std::vector;
 using std::endl;
+using std::queue;
 
 std::ostream &
 operator<<(std::ostream &os, const Result &r) {
@@ -214,11 +216,10 @@ EngineDB::initialize_db(const PathLookup &fv_paths,
 void
 EngineDB::read_db(PathLookup &fv_paths, 
                   PathLookup &hf_paths,
+                  queue<string> &hf_queue,
                   HashTabLookup &hts,
                   RegularNearestNeighborGraph &g,
                   bool VERBOSE) {
-
-  size_t count = 0;
 
   get_feature_vecs(fv_paths);
 
@@ -227,12 +228,14 @@ EngineDB::read_db(PathLookup &fv_paths,
          << fv_paths.size() << ")" << endl;
 
   get_hash_funcs(hf_paths);
+  get_hash_func_queue(hf_queue);
 
   if (VERBOSE)
     cerr << "read from db hash functions: 100% (" 
          << hf_paths.size() << ")" << endl;
 
 
+  size_t count = 0;
   for(PathLookup::const_iterator i(hf_paths.begin());
       i != hf_paths.end(); ++i) {
     LSHAngleHashTable hash_table(i->first);
@@ -473,4 +476,21 @@ EngineDB::get_num_hash_functions() {
   else
     throw SMITHLABException("Failed to retrive hash functions");
   return 0;
+}
+
+
+void
+EngineDB::get_hash_func_queue(std::queue<std::string> &hf_queue) {
+
+  mysqlpp::Query query = conn.query();
+  query << "select * from hash_function order by update_time asc"; 
+  if(mysqlpp::StoreQueryResult res = query.store()) {
+    for(size_t i = 0; i < res.num_rows(); ++i) {
+      string id = "";
+      res[i][0].to_string(id);
+      hf_queue.push_back(id);
+    }
+  }
+  else
+    throw SMITHLABException("Failed to retrive hash functions");
 }

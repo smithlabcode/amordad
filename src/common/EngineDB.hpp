@@ -91,6 +91,7 @@ public:
                      bool VERBOSE);
 
   void read_db(PathLookup &fv_paths, PathLookup &hf_paths, HashTabLookup &hts, 
+               std::queue<std::string> &hf_queue,
                RegularNearestNeighborGraph &g, bool VERBOSE);
 
 private:
@@ -116,6 +117,7 @@ private:
   void get_hash_table(LSHAngleHashTable &ht);
   void get_graph_edges(RegularNearestNeighborGraph &nng);
   void get_graph(RegularNearestNeighborGraph &nng);
+  void get_hash_func_queue(std::queue<std::string> &hf_queue);
 };
 
 #endif
