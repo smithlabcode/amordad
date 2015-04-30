@@ -326,8 +326,13 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   hfs[hash_fun.get_id()] = hash_fun;
   hf_queue.push(hash_fun.get_id());
 
+  cerr << "after refresh hash tables:(" << hfs.size() << ')' << endl;
+  cerr << "after refresh hash functions:(" << hts.size() << ')' << endl;
+  cerr << "after refresh hash func queue:(" << hf_queue.size() << ')' << endl;
+
   // update the database
-  eng.process_refresh(hash_fun, hash_fun_file, fvs, added_edges);
+  eng.process_refresh(hash_fun, hash_fun_file, fvs,
+                      added_edges, g.get_maximum_degree());
 }
  
 
@@ -394,7 +399,9 @@ execute_commands(const string &command_file,
     if(!(iss >> operation >> query_path))
       throw SMITHLABException("bad command format: " + line);
 
-    commands.push_back(make_pair(operation, query_path));
+    // support comment on command file
+    if(operation.at(0) != '#')
+      commands.push_back(make_pair(operation, query_path));
   }
 
   
@@ -421,7 +428,13 @@ execute_commands(const string &command_file,
     }
     else
       throw SMITHLABException("unknown command");
+
+    if (VERBOSE)
+      cerr << '\r' << "execute commands: "
+           << percent(i, commands.size())<< "%\r";
   }
+  if (VERBOSE)
+    cerr << "execute commands: 100% (" << commands.size() << ')' << endl;
 }
 
 
@@ -471,9 +484,7 @@ main(int argc, const char **argv) {
     string user = "root";
     string server = "localhost";
 
-    string command;
-    
-    /****************** COMMAND LINE OPTIONS ********************/
+    /****************** qcommand LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
                            "insertion, deletion and refresh with "
                            "database residing on mysql");
@@ -489,7 +500,6 @@ main(int argc, const char **argv) {
     opt_parse.add_opt("pass", 'p', "password for the mysql database", true, pass);
     opt_parse.add_opt("user", 'u', "username for the mysql database", true, user);
     opt_parse.add_opt("server", 's', "server for the mysql database", true, server);
-    opt_parse.add_opt("com", 'c', "command file", false, command);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
 
     vector<string> leftover_args;
@@ -509,9 +519,7 @@ main(int argc, const char **argv) {
     }
     /****************** END COMMAND LINE OPTIONS *****************/
 
-    if(!validate_file(command, 'r'))
-      throw SMITHLABException("bad command file:" + command);
-
+    
     ////////////////////////////////////////////////////////////////////////
     ///// READ DATA FROM ENGINE DATABASE ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
@@ -565,17 +573,24 @@ main(int argc, const char **argv) {
       cerr << "load hash functions: 100% (" << hf_lookup.size() << ")" << endl;
 
     ////////////////////////////////////////////////////////////////////////
-    ///// EXECUTE THE COMMANDS ///////////////////////////////////////
+    ///// EXECUTE THE qcommandS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    std::chrono::time_point<std::chrono::system_clock> start, end;
-    start = std::chrono::system_clock::now();
-    execute_commands(command, fv_lookup, hf_lookup,
-                     hash_func_queue, ht_lookup, nng, eng, VERBOSE);
-    end = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
+    for(size_t i = 0; i < leftover_args.size(); ++i) {
 
-    cout << "Wall time = " << elapsed.count() << "s\n";
+      if(!validate_file(leftover_args[i], 'r'))
+        throw SMITHLABException("bad command file:" + leftover_args[i]);
+
+      std::chrono::time_point<std::chrono::system_clock> start, end;
+      start = std::chrono::system_clock::now();
+      execute_commands(leftover_args[i], fv_lookup, hf_lookup,
+          hash_func_queue, ht_lookup, nng, eng, VERBOSE);
+      end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed = end - start;
+
+      cout << leftover_args[i] << endl;
+      cout << "Wall time = " << elapsed.count() << "s\n";
+    }
   }
   catch (const SMITHLABException &e) {
     cerr << e.what() << endl;

@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <iterator>
 #include <queue>
+#include <chrono>
 
 #include "OptionParser.hpp"
 #include "smithlab_utils.hpp"
@@ -328,7 +329,8 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   hf_queue.push(hash_fun.get_id());
 
   // update the database
-  eng.process_refresh(hash_fun, hash_fun_file, fvs, added_edges);
+  eng.process_refresh(hash_fun, hash_fun_file, fvs,
+                      added_edges, g.get_maximum_degree());
 }
  
 
@@ -529,13 +531,19 @@ main(int argc, const char **argv) {
 
     CROW_ROUTE(app, "/query/<string>")
     ([&](string fv_path) {
+      std::chrono::time_point<std::chrono::system_clock> start, end;
+      start = std::chrono::system_clock::now();
       execute_query(fv_lookup, hf_lookup, ht_lookup, 
-                    nng, fv_path, n_neighbors, max_proximity_radius,
-                    result);
+                   nng, fv_path, n_neighbors, max_proximity_radius,
+                   result);
+      end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed = end - start;
+
       if(VERBOSE) {
-      copy(result.begin(), result.end(),
-        std::ostream_iterator<Result>(cerr, "\t"));
-      cerr << endl;
+        cerr << "Wall time = " << elapsed.count() << "s\n";
+        copy(result.begin(), result.end(),
+             std::ostream_iterator<Result>(cerr, "\t"));
+        cerr << endl;
       }
 
       return "Submitted";
@@ -543,15 +551,27 @@ main(int argc, const char **argv) {
 
     CROW_ROUTE(app, "/insert/<string>")
     ([&](string fv_path) {
+      std::chrono::time_point<std::chrono::system_clock> start, end;
+      start = std::chrono::system_clock::now();
       execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
                        nng, fv_path, max_degree, eng);
+      end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed = end - start;
+      if(VERBOSE)
+        cerr << "Wall time = " << elapsed.count() << "s\n";
       return "Submitted";
     });
 
     CROW_ROUTE(app, "/delete/<string>")
     ([&](string fv_path) {
+      std::chrono::time_point<std::chrono::system_clock> start, end;
+      start = std::chrono::system_clock::now();
       execute_deletion(fv_lookup, hf_lookup, ht_lookup, 
                        nng, fv_path, eng);
+      end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed = end - start;
+      if(VERBOSE)
+        cerr << "Wall time = " << elapsed.count() << "s\n";
       return "Submitted";
     });
 
@@ -559,9 +579,17 @@ main(int argc, const char **argv) {
     ([&](string hf_path) {
      // LSHAngleHashFunction hash_fun = get_hash_function(n_bits, n_features, 
      //   feature_set_id, hfs_dir, next_hash_fun_id);
+     std::chrono::time_point<std::chrono::system_clock> start, end;
+     start = std::chrono::system_clock::now();
      execute_refresh(fv_lookup, hf_lookup, hash_func_queue, ht_lookup, 
                        nng, hf_path, eng);
-      return "Submitted";
+     end = std::chrono::system_clock::now();
+     std::chrono::duration<double> elapsed = end - start;
+
+     if(VERBOSE)
+       cerr << "Wall time = " << elapsed.count() << "s\n";
+
+     return "Submitted";
     });
 
     app.port(18080)

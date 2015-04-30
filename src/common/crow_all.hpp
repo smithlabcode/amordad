@@ -3859,9 +3859,9 @@ enum http_host_state
 #define LF                  '\n'
 #define LOWER(c)            (unsigned char)(c | 0x20)
 #define IS_ALPHA(c)         (LOWER(c) >= 'a' && LOWER(c) <= 'z')
-#define IS_NUM(c)           ((c) >= '0' && (c) <= '9')
-#define IS_ALPHANUM(c)      (IS_ALPHA(c) || IS_NUM(c))
-#define IS_HEX(c)           (IS_NUM(c) || (LOWER(c) >= 'a' && LOWER(c) <= 'f'))
+#define IS_A_NUM(c)           ((c) >= '0' && (c) <= '9')
+#define IS_ALPHANUM(c)      (IS_ALPHA(c) || IS_A_NUM(c))
+#define IS_HEX(c)           (IS_A_NUM(c) || (LOWER(c) >= 'a' && LOWER(c) <= 'f'))
 #define IS_MARK(c)          ((c) == '-' || (c) == '_' || (c) == '.' || \
   (c) == '!' || (c) == '~' || (c) == '*' || (c) == '\'' || (c) == '(' || \
   (c) == ')')
@@ -4364,7 +4364,7 @@ static const int8_t unhex[256] =
           break;
         }
 
-        if (!IS_NUM(ch)) {
+        if (!IS_A_NUM(ch)) {
           SET_ERRNO(HPE_INVALID_VERSION);
           goto error;
         }
@@ -4382,7 +4382,7 @@ static const int8_t unhex[256] =
 
       /* first digit of minor HTTP version */
       case s_res_first_http_minor:
-        if (!IS_NUM(ch)) {
+        if (!IS_A_NUM(ch)) {
           SET_ERRNO(HPE_INVALID_VERSION);
           goto error;
         }
@@ -4399,7 +4399,7 @@ static const int8_t unhex[256] =
           break;
         }
 
-        if (!IS_NUM(ch)) {
+        if (!IS_A_NUM(ch)) {
           SET_ERRNO(HPE_INVALID_VERSION);
           goto error;
         }
@@ -4417,7 +4417,7 @@ static const int8_t unhex[256] =
 
       case s_res_first_status_code:
       {
-        if (!IS_NUM(ch)) {
+        if (!IS_A_NUM(ch)) {
           if (ch == ' ') {
             break;
           }
@@ -4432,7 +4432,7 @@ static const int8_t unhex[256] =
 
       case s_res_status_code:
       {
-        if (!IS_NUM(ch)) {
+        if (!IS_A_NUM(ch)) {
           switch (ch) {
             case ' ':
               parser->state = s_res_status_start;
@@ -4750,7 +4750,7 @@ static const int8_t unhex[256] =
           break;
         }
 
-        if (!IS_NUM(ch)) {
+        if (!IS_A_NUM(ch)) {
           SET_ERRNO(HPE_INVALID_VERSION);
           goto error;
         }
@@ -4768,7 +4768,7 @@ static const int8_t unhex[256] =
 
       /* first digit of minor HTTP version */
       case s_req_first_http_minor:
-        if (!IS_NUM(ch)) {
+        if (!IS_A_NUM(ch)) {
           SET_ERRNO(HPE_INVALID_VERSION);
           goto error;
         }
@@ -4792,7 +4792,7 @@ static const int8_t unhex[256] =
 
         /* XXX allow spaces after digit? */
 
-        if (!IS_NUM(ch)) {
+        if (!IS_A_NUM(ch)) {
           SET_ERRNO(HPE_INVALID_VERSION);
           goto error;
         }
@@ -5040,7 +5040,7 @@ static const int8_t unhex[256] =
             break;
 
           case h_content_length:
-            if (!IS_NUM(ch)) {
+            if (!IS_A_NUM(ch)) {
               SET_ERRNO(HPE_INVALID_CONTENT_LENGTH);
               goto error;
             }
@@ -5099,7 +5099,7 @@ static const int8_t unhex[256] =
 
             if (ch == ' ') break;
 
-            if (!IS_NUM(ch)) {
+            if (!IS_A_NUM(ch)) {
               SET_ERRNO(HPE_INVALID_CONTENT_LENGTH);
               goto error;
             }
@@ -5666,7 +5666,7 @@ http_parse_host_char(enum http_host_state s, const char ch) {
 
     case s_http_host_port:
     case s_http_host_port_start:
-      if (IS_NUM(ch)) {
+      if (IS_A_NUM(ch)) {
         return s_http_host_port;
       }
 
@@ -5899,7 +5899,7 @@ http_parser_version(void) {
 #undef LF
 #undef LOWER
 #undef IS_ALPHA
-#undef IS_NUM
+#undef IS_A_NUM
 #undef IS_ALPHANUM
 #undef IS_HEX
 #undef IS_MARK
