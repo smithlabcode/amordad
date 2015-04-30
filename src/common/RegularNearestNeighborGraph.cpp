@@ -99,6 +99,7 @@ RegularNearestNeighborGraph::update_vertex(const nng_vertex &u,
   return false;
 }
 
+
 bool
 RegularNearestNeighborGraph::update_vertex(const string &u, 
                                            const string &v,
@@ -229,7 +230,7 @@ double
 RegularNearestNeighborGraph::get_distance(const
                                           graph_traits<internal_graph>::edge_descriptor 
                                           &the_edge) const {
-  return boost::get(get(boost::edge_weight, the_graph), the_edge);
+  return boost::get(boost::get(boost::edge_weight, the_graph), the_edge);
 }
 
 
