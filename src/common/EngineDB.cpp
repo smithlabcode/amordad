@@ -104,7 +104,8 @@ bool
 EngineDB::process_refresh(const LSHAngleHashFunction &hf, 
                           const std::string &path,
                           const FeatVecLookup &fvs,
-                          const std::vector<Edge> &added_edges) {
+                          const std::vector<Edge> &added_edges,
+                          const size_t max_deg) {
 
   mysqlpp::Transaction trans(conn, 
       mysqlpp::Transaction::serializable,
@@ -122,7 +123,8 @@ EngineDB::process_refresh(const LSHAngleHashFunction &hf,
 
   // insert updated edges to graph
   for (size_t i = 0; i < added_edges.size(); ++i)
-    insert_graph_edge(added_edges[i].src, added_edges[i].dst, added_edges[i].dist);
+    insert_graph_edge(added_edges[i].src, added_edges[i].dst,
+                      added_edges[i].dist, max_deg);
 
   // delete the oldest hash function
   delete_oldest_hash_function();
@@ -297,16 +299,36 @@ EngineDB::insert_hash_occupant(const std::string &hf_id,
 
 
 bool
-EngineDB::insert_graph_edge(const std::string &fv_id,
-                            const std::string &ng_id,
+EngineDB::insert_graph_edge(const std::string &src,
+                            const std::string &dst,
                             const double dist) {
 
   mysqlpp::Query query = conn.query();
   query << "insert into graph_edge values (" 
-    << mysqlpp::quote << fv_id << ","
-    << mysqlpp::quote << ng_id << ","
+    << mysqlpp::quote << src << ","
+    << mysqlpp::quote << dst << ","
     << dist << ");";
   return query.execute();
+}
+
+
+bool
+EngineDB::insert_graph_edge(const std::string &src,
+                            const std::string &dst,
+                            const double dist,
+                            const size_t max_deg) {
+
+  if(!insert_graph_edge(src, dst, dist))
+    return false;
+  size_t out_degree = get_out_degree(src);
+  if(out_degree > max_deg) {
+    mysqlpp::Query query = conn.query();
+    query << "delete from graph_edge where src = " 
+          << mysqlpp::quote << src << "order by dist desc limit "
+          << out_degree - max_deg;
+    return query.execute();
+  }
+  return true;
 }
 
 
@@ -493,4 +515,18 @@ EngineDB::get_hash_func_queue(std::queue<std::string> &hf_queue) {
   }
   else
     throw SMITHLABException("Failed to retrive hash functions");
+}
+
+
+size_t
+EngineDB::get_out_degree(const std::string &src) {
+
+  mysqlpp::Query query = conn.query();
+  query << "select count(*) from graph_edge where src = "
+        << mysqlpp::quote << src;
+  if(mysqlpp::StoreQueryResult res = query.store())
+    return res[0][0];
+  else
+    throw SMITHLABException("Failed to retrive hash functions");
+  return 0;
 }

@@ -79,7 +79,8 @@ public:
 
   bool process_refresh(const LSHAngleHashFunction &hf, const std::string &path,
                        const FeatVecLookup &fvs,
-                       const std::vector<Edge> &added_edges);
+                       const std::vector<Edge> &added_edges,
+                       const size_t max_deg);
 
   std::string get_oldest_hash_function();
   std::string get_newest_hash_function();
@@ -106,9 +107,14 @@ private:
   bool insert_feature_vec(const std::string &fv_id, const std::string &path);
   bool insert_hash_occupant(const std::string &hf_id, const size_t hash_value, 
                             const std::string &fv_id);
-  bool insert_graph_edge(const std::string &fv_id,
-                         const std::string &ng_id,
+  bool insert_graph_edge(const std::string &src,
+                         const std::string &dst,
                          const double dist);
+  bool insert_graph_edge(const std::string &src,
+                         const std::string &dst,
+                         const double dist,
+                         const size_t max_deg);
+
   bool insert_hash_function(const std::string &hf_id, const std::string &path);
   bool delete_hash_function(const std::string &hf_id);
   bool delete_oldest_hash_function();
@@ -119,6 +125,8 @@ private:
   void get_graph_edges(RegularNearestNeighborGraph &nng);
   void get_graph(RegularNearestNeighborGraph &nng);
   void get_hash_func_queue(std::queue<std::string> &hf_queue);
+
+  size_t get_out_degree(const std::string &src);
 };
 
 #endif
