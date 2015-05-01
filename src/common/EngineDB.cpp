@@ -223,6 +223,9 @@ EngineDB::read_db(PathLookup &fv_paths,
                   RegularNearestNeighborGraph &g,
                   bool VERBOSE) {
 
+  if (VERBOSE)
+    cerr << "BEGIN READING FROM DB" << endl;
+
   get_feature_vecs(fv_paths);
 
   if (VERBOSE)

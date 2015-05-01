@@ -386,7 +386,6 @@ execute_commands(const string &command_file,
 
   size_t n_neighbors = 20;
   double max_proximity_radius = 0.75;
-  size_t max_deg = g.get_maximum_degree();
 
   std::ifstream in(command_file.c_str());
   if (!in)
@@ -541,10 +540,11 @@ main(int argc, const char **argv) {
                         ht_lookup, nng, VERBOSE); 
     }
 
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
     eng.read_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
                 ht_lookup, nng, VERBOSE);
-
-
+    
     // READING SAMPLES IN DATABASE
     unordered_map<string, FeatureVector> fv_lookup;
     get_database(VERBOSE, fv_path_lookup, fv_lookup);
@@ -573,6 +573,12 @@ main(int argc, const char **argv) {
     if (VERBOSE)
       cerr << "load hash functions: 100% (" << hf_lookup.size() << ")" << endl;
 
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if(VERBOSE)
+      cerr << "load database time = " << elapsed.count() << "s\n";
+
     ////////////////////////////////////////////////////////////////////////
     ///// EXECUTE THE COMMANDS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
@@ -585,12 +591,14 @@ main(int argc, const char **argv) {
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
       execute_commands(leftover_args[i], fv_lookup, hf_lookup,
-          hash_func_queue, ht_lookup, nng, eng, VERBOSE);
+                       hash_func_queue, ht_lookup, nng, eng, VERBOSE);
       end = std::chrono::system_clock::now();
       std::chrono::duration<double> elapsed = end - start;
 
-      cout << leftover_args[i] << endl;
-      cout << "Wall time = " << elapsed.count() << "s\n";
+      if(VERBOSE) {
+        cout << leftover_args[i] << endl;
+        cout << "Wall time = " << elapsed.count() << "s\n";
+      }
     }
   }
   catch (const SMITHLABException &e) {
