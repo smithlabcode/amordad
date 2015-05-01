@@ -330,6 +330,7 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   cerr << "after refresh hash functions:(" << hts.size() << ')' << endl;
   cerr << "after refresh hash func queue:(" << hf_queue.size() << ')' << endl;
 
+  cerr << g << endl;
   // update the database
   eng.process_refresh(hash_fun, hash_fun_file, fvs,
                       added_edges, g.get_maximum_degree());
@@ -485,9 +486,8 @@ main(int argc, const char **argv) {
     string server = "localhost";
 
     /****************** qcommand LINE OPTIONS ********************/
-    OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
-                           "insertion, deletion and refresh with "
-                           "database residing on mysql");
+    OptionParser opt_parse(strip_path(argv[0]),
+                           "test amordad", "<command-file1> <...>");
 
     // opt_parse.add_opt("fs", 'f', "feature set id", true, feature_set_id);
     opt_parse.add_opt("bits", 'b', "bits in hash value", true, n_bits);
@@ -573,7 +573,7 @@ main(int argc, const char **argv) {
       cerr << "load hash functions: 100% (" << hf_lookup.size() << ")" << endl;
 
     ////////////////////////////////////////////////////////////////////////
-    ///// EXECUTE THE qcommandS ///////////////////////////////////////
+    ///// EXECUTE THE COMMANDS ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
     for(size_t i = 0; i < leftover_args.size(); ++i) {
