@@ -152,13 +152,12 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
 }
 
 
-static bool
+static void
 execute_insertion(unordered_map<string, FeatureVector> &fvs,
                   const unordered_map<string, LSHFun> &hfs,
                   unordered_map<string, LSHTab> &hts,
                   RegularNearestNeighborGraph &g,
                   const string  &query_path,
-                  const size_t n_neighbors,
                   EngineDB &eng) {
 
   FeatureVector query = get_query(query_path);
@@ -207,7 +206,8 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
 
   vector<Result> neighbors;
   double max = std::numeric_limits<double>::max();
-  evaluate_candidates(fvs, query, n_neighbors, max, candidates, neighbors);
+  size_t max_deg = g.get_maximum_degree();
+  evaluate_candidates(fvs, query, max_deg, max, candidates, neighbors);
   
   // CONNECT THE QUERY TO EACH OF THE "RESULT" NEIGHBORS
   // IN THE GRAPH
@@ -217,8 +217,6 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
 
   // UPDATE THE DATABASE
   eng.process_insertion(query, query_path, hfs, neighbors);
-
-  return true;
 }
 
 
@@ -255,6 +253,7 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
   // update the database
   eng.process_deletion(query.get_id());
 }
+
 
 static void
 add_relations_from_bucket(const vector<string> &bucket, 
@@ -312,7 +311,8 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
 
   vector<Edge> added_edges;
   // iterate over buckets
-  for (BucketMap::const_iterator j(hash_table.begin()); j != hash_table.end(); ++j)
+  for (BucketMap::const_iterator j(hash_table.begin()); 
+       j != hash_table.end(); ++j)
     add_relations_from_bucket(j->second, fvs, g, added_edges);
 
   // remove the oldest hash function and associated hash table
@@ -326,11 +326,11 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   hfs[hash_fun.get_id()] = hash_fun;
   hf_queue.push(hash_fun.get_id());
 
-  cerr << "after refresh hash tables:(" << hfs.size() << ')' << endl;
-  cerr << "after refresh hash functions:(" << hts.size() << ')' << endl;
-  cerr << "after refresh hash func queue:(" << hf_queue.size() << ')' << endl;
+  // cerr << "after refresh hash tables:(" << hfs.size() << ')' << endl;
+  // cerr << "after refresh hash functions:(" << hts.size() << ')' << endl;
+  // cerr << "after refresh hash func queue:(" << hf_queue.size() << ')' << endl;
 
-  cerr << g << endl;
+  // cerr << g << endl;
   // update the database
   eng.process_refresh(hash_fun, hash_fun_file, fvs,
                       added_edges, g.get_maximum_degree());
@@ -386,6 +386,7 @@ execute_commands(const string &command_file,
 
   size_t n_neighbors = 20;
   double max_proximity_radius = 0.75;
+  size_t max_deg = g.get_maximum_degree();
 
   std::ifstream in(command_file.c_str());
   if (!in)
@@ -417,7 +418,7 @@ execute_commands(const string &command_file,
     }
     else if(commands[i].first == "insert") {
       string query_path = commands[i].second;
-      execute_insertion(fvs, hfs, hts, g, query_path, n_neighbors, eng); 
+      execute_insertion(fvs, hfs, hts, g, query_path, eng); 
     }
     else if(commands[i].first == "delete") {
       FeatureVector fv = get_query(commands[i].second);
