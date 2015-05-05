@@ -99,7 +99,7 @@ amordad : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
 
 test_disk : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
-	LSHAngleHashTable.o LSHAngleHashFunction.o)
+	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
 
 test_db : $(addprefix $(COMMON)/, RegularNearestNeighborGraph.o \
 	LSHAngleHashTable.o LSHAngleHashFunction.o EngineDB.o)
