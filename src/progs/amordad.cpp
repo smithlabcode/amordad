@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <iterator>
 #include <queue>
+#include <iostream>
 #include <chrono>
 
 #include "OptionParser.hpp"
@@ -111,13 +112,13 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
               const unordered_map<string, LSHFun> &hfs,
               const unordered_map<string, LSHTab> &hts,
               RegularNearestNeighborGraph &g,
-              const string &query_path,
+              const FeatureVector &query,
               const size_t n_neighbors,
               const double max_proximity_radius,
               vector<Result> &results) {
 
-  FeatureVector query = get_query(query_path);
   unordered_set<string> candidates;
+
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::const_iterator i(hts.begin());
        i != hts.end(); ++i) {
@@ -152,13 +153,12 @@ execute_query(const unordered_map<string, FeatureVector> &fvs,
 }
 
 
-static bool
+static void
 execute_insertion(unordered_map<string, FeatureVector> &fvs,
                   const unordered_map<string, LSHFun> &hfs,
                   unordered_map<string, LSHTab> &hts,
                   RegularNearestNeighborGraph &g,
                   const string  &query_path,
-                  const size_t n_neighbors,
                   EngineDB &eng) {
 
   FeatureVector query = get_query(query_path);
@@ -207,7 +207,8 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
 
   vector<Result> neighbors;
   double max = std::numeric_limits<double>::max();
-  evaluate_candidates(fvs, query, n_neighbors, max, candidates, neighbors);
+  size_t max_deg = g.get_maximum_degree();
+  evaluate_candidates(fvs, query, max_deg, max, candidates, neighbors);
   
   // CONNECT THE QUERY TO EACH OF THE "RESULT" NEIGHBORS
   // IN THE GRAPH
@@ -217,8 +218,6 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
 
   // UPDATE THE DATABASE
   eng.process_insertion(query, query_path, hfs, neighbors);
-
-  return true;
 }
 
 
@@ -227,10 +226,8 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
                  const unordered_map<string, LSHFun> &hfs,
                  unordered_map<string, LSHTab> &hts,
                  RegularNearestNeighborGraph &g,
-                 const string &query_path,
+                 const FeatureVector &query,
                  EngineDB &eng) {
-
-  FeatureVector query = get_query(query_path);
   
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::iterator i(hts.begin());
@@ -257,6 +254,7 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
   // update the database
   eng.process_deletion(query.get_id());
 }
+
 
 static void
 add_relations_from_bucket(const vector<string> &bucket, 
@@ -314,7 +312,8 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
 
   vector<Edge> added_edges;
   // iterate over buckets
-  for (BucketMap::const_iterator j(hash_table.begin()); j != hash_table.end(); ++j)
+  for (BucketMap::const_iterator j(hash_table.begin()); 
+       j != hash_table.end(); ++j)
     add_relations_from_bucket(j->second, fvs, g, added_edges);
 
   // remove the oldest hash function and associated hash table
@@ -328,6 +327,11 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   hfs[hash_fun.get_id()] = hash_fun;
   hf_queue.push(hash_fun.get_id());
 
+  // cerr << "after refresh hash tables:(" << hfs.size() << ')' << endl;
+  // cerr << "after refresh hash functions:(" << hts.size() << ')' << endl;
+  // cerr << "after refresh hash func queue:(" << hf_queue.size() << ')' << endl;
+
+  // cerr << g << endl;
   // update the database
   eng.process_refresh(hash_fun, hash_fun_file, fvs,
                       added_edges, g.get_maximum_degree());
@@ -355,31 +359,8 @@ get_database(const bool VERBOSE,
            << percent(count++, paths.size()) << "%\r";
   }
   if (VERBOSE)
-    cerr << "\rloading feature vectors: 100%(" 
-         << paths.size() << ')' << endl;
+    cerr << "\rloading feature vectors: 100%" << endl;
 }
-
-
-// static LSHAngleHashFunction
-// get_hash_function(size_t n_bits, size_t n_features, 
-//                   const string &feature_set_id,
-//                   const string &hfs_dir,
-//                   const size_t next_hf_id) {
-//   string id = "hf_" + toa(next_hf_id);
-//   const LSHAngleHashFunction hash_function(id, feature_set_id,
-//                                            n_features, n_bits);
-//   std::ofstream of;
-//   string outfile = path_join(hfs_dir,id);
-//   outfile = outfile + ".hf";
-//   if (!outfile.empty()) of.open(outfile.c_str());
-//   if (!of) throw SMITHLABException("cannot write to file: " + outfile);
-//   std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
-//
-//   out << hash_function << endl;
-//
-//   return hash_function;
-// }
-//
 
 
 static
@@ -428,15 +409,13 @@ main(int argc, const char **argv) {
     string user = "root";
     string server = "localhost";
 
-    /****************** COMMAND LINE OPTIONS ********************/
+    /****************** qcommand LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
         "insertion, deletion and refresh with "
         "database residing on mysql");
 
-    // opt_parse.add_opt("fs", 'f', "feature set id", true, feature_set_id);
     opt_parse.add_opt("bits", 'b', "bits in hash value", true, n_bits);
     opt_parse.add_opt("nfeat", 'n', "number of features", true, n_features);
-    // opt_parse.add_opt("name", 'n', "name for the graph", false, graph_name);
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
     opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
     opt_parse.add_opt("hfdir", 'h', "folder for hash functions", false, hf_dir);
@@ -445,7 +424,6 @@ main(int argc, const char **argv) {
     opt_parse.add_opt("user", 'u', "username for the mysql database", true, user);
     opt_parse.add_opt("server", 's', "server for the mysql database", true, server);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
-
 
     vector<string> leftover_args;
     opt_parse.parse(argc, argv, leftover_args);
@@ -464,9 +442,11 @@ main(int argc, const char **argv) {
     }
     /****************** END COMMAND LINE OPTIONS *****************/
 
+    
     ////////////////////////////////////////////////////////////////////////
     ///// READ DATA FROM ENGINE DATABASE ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
+
 
     EngineDB eng(db,server,user,pass);
     unordered_map<string, string> fv_path_lookup;
@@ -483,10 +463,11 @@ main(int argc, const char **argv) {
                         ht_lookup, nng, VERBOSE); 
     }
 
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
     eng.read_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
                 ht_lookup, nng, VERBOSE);
-
-
+    
     // READING SAMPLES IN DATABASE
     unordered_map<string, FeatureVector> fv_lookup;
     get_database(VERBOSE, fv_path_lookup, fv_lookup);
@@ -515,6 +496,12 @@ main(int argc, const char **argv) {
     if (VERBOSE)
       cerr << "load hash functions: 100% (" << hf_lookup.size() << ")" << endl;
 
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if(VERBOSE)
+      cerr << "load database time = " << elapsed.count() << "s\n";
+
     ////////////////////////////////////////////////////////////////////////
     ///// EXECUTE THE REQUESTS FROM URL ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
@@ -525,17 +512,17 @@ main(int argc, const char **argv) {
      return "Amordad Web Server";
      });
 
-    const size_t n_neighbors = 20;
-    const double max_proximity_radius = 0.75;
-    vector<Result> result;
-
     CROW_ROUTE(app, "/query/<string>")
     ([&](string fv_path) {
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
+      const size_t n_neighbors = 20;
+      const double max_proximity_radius = 0.75;
+      vector<Result> result;
+      FeatureVector fv = get_query(fv_path);
       execute_query(fv_lookup, hf_lookup, ht_lookup, 
-                   nng, fv_path, n_neighbors, max_proximity_radius,
-                   result);
+                    nng, fv, n_neighbors, max_proximity_radius,
+                    result);
       end = std::chrono::system_clock::now();
       std::chrono::duration<double> elapsed = end - start;
 
@@ -554,7 +541,7 @@ main(int argc, const char **argv) {
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
       execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
-                       nng, fv_path, max_degree, eng);
+                        nng, fv_path, eng);
       end = std::chrono::system_clock::now();
       std::chrono::duration<double> elapsed = end - start;
       if(VERBOSE)
@@ -566,8 +553,9 @@ main(int argc, const char **argv) {
     ([&](string fv_path) {
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
+      FeatureVector fv = get_query(fv_path);
       execute_deletion(fv_lookup, hf_lookup, ht_lookup, 
-                       nng, fv_path, eng);
+                       nng, fv, eng);
       end = std::chrono::system_clock::now();
       std::chrono::duration<double> elapsed = end - start;
       if(VERBOSE)
@@ -577,12 +565,10 @@ main(int argc, const char **argv) {
 
     CROW_ROUTE(app, "/refresh/<string>")
     ([&](string hf_path) {
-     // LSHAngleHashFunction hash_fun = get_hash_function(n_bits, n_features, 
-     //   feature_set_id, hfs_dir, next_hash_fun_id);
      std::chrono::time_point<std::chrono::system_clock> start, end;
      start = std::chrono::system_clock::now();
      execute_refresh(fv_lookup, hf_lookup, hash_func_queue, ht_lookup, 
-                       nng, hf_path, eng);
+                     nng, hf_path, eng);
      end = std::chrono::system_clock::now();
      std::chrono::duration<double> elapsed = end - start;
 
