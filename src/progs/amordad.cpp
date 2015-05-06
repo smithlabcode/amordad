@@ -578,6 +578,26 @@ main(int argc, const char **argv) {
      return "Submitted";
     });
 
+    CROW_ROUTE(app, "/print/<string>")
+    ([&](string data_struct) {
+     if(data_struct == "graph")
+       cerr << nng << endl;
+
+     else if(data_struct == "hfs")
+       for (unordered_map<string, LSHFun>::iterator i(hf_lookup.begin());
+            i != hf_lookup.end(); ++i)
+         cerr << i->second << endl;
+
+     else if(data_struct == "hts")
+       for (unordered_map<string, LSHTab>::iterator i(ht_lookup.begin());
+            i != ht_lookup.end(); ++i)
+         cerr << i->second << endl;
+     else if(data_struct == "fvs")
+       cerr << "number of feature vectors: (" << fv_lookup.size() 
+            << ')' << endl;
+     return "Submitted";
+    });
+
     app.port(18080)
        .run();
   }
