@@ -512,8 +512,9 @@ main(int argc, const char **argv) {
      return "Amordad Web Server";
      });
 
-    CROW_ROUTE(app, "/query/<string>")
-    ([&](string fv_path) {
+    CROW_ROUTE(app, "/query")
+    ([&](const crow::request &req) {
+      string fv_path = req.url_params.get("path");
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
       const size_t n_neighbors = 20;
@@ -541,8 +542,9 @@ main(int argc, const char **argv) {
       return ret;
     });
 
-    CROW_ROUTE(app, "/insert/<string>")
-    ([&](string fv_path) {
+    CROW_ROUTE(app, "/insert")
+    ([&](const crow::request &req) {
+      string fv_path = req.url_params.get("path");
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
       execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
@@ -554,8 +556,10 @@ main(int argc, const char **argv) {
       return "Submitted";
     });
 
-    CROW_ROUTE(app, "/delete/<string>")
-    ([&](string fv_path) {
+
+    CROW_ROUTE(app, "/delete")
+    ([&](const crow::request &req) {
+      string fv_path = req.url_params.get("path");
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
       FeatureVector fv = get_query(fv_path);
@@ -568,8 +572,8 @@ main(int argc, const char **argv) {
       return "Submitted";
     });
 
-    CROW_ROUTE(app, "/refresh/<string>")
-    ([&](string hf_path) {
+    CROW_ROUTE(app, "/refresh")
+    ([]() {
      std::chrono::time_point<std::chrono::system_clock> start, end;
      start = std::chrono::system_clock::now();
      execute_refresh(fv_lookup, hf_lookup, hash_func_queue, ht_lookup, 
