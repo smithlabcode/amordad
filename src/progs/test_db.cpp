@@ -446,7 +446,7 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
                         queue<string> hash_func_queue) {
 
   for(size_t i = 0; i < qsize; ++i) {
-    string id = "hf_" + toa(i);
+    string id = toa(i);
     const LSHAngleHashFunction hash_function(id, feature_set_id,
                                              n_features, n_bits);
     std::ofstream of;
