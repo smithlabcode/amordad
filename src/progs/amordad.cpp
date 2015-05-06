@@ -533,7 +533,12 @@ main(int argc, const char **argv) {
         cerr << endl;
       }
 
-      return "Submitted";
+      crow::json::wvalue ret;
+      ret["id"] = fv.get_id();
+      for (size_t i = 0; i < result.size(); ++i)
+        ret[result[i].id] = result[i].val;
+
+      return ret;
     });
 
     CROW_ROUTE(app, "/insert/<string>")
