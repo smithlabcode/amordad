@@ -568,6 +568,10 @@ main(int argc, const char **argv) {
     RegularNearestNeighborGraph nng(graph_name, max_degree);
 
     if(eng.get_num_hash_functions() == 0) {
+
+      if(VERBOSE)
+        cerr << "INITIALIZING HASH FUNCTIONS" << endl;
+
       add_hash_functions(hf_queue_size, n_bits, n_features, 
                          feature_set_id, hf_dir, hf_path_lookup,
                          hash_func_queue);
