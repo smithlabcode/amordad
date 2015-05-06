@@ -370,7 +370,7 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
                         queue<string> hash_func_queue) {
 
   for(size_t i = 0; i < qsize; ++i) {
-    string id = "hf_" + toa(i);
+    string id = toa(i);
     const LSHAngleHashFunction hash_function(id, feature_set_id,
                                              n_features, n_bits);
     std::ofstream of;
@@ -384,6 +384,28 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
     hf_paths[hash_function.get_id()] = outfile;
     hash_func_queue.push(hash_function.get_id());
   }
+}
+
+
+static
+string add_new_hash_function(size_t n_bits, size_t n_features, 
+                             const string &feature_set_id, const string &hfs_dir, 
+                             queue<string> hash_func_queue) {
+
+    // find the newest hash function in queue, increase id by 1
+    string newest = hash_func_queue.back();
+    string id = toa(std::stoi(newest) + 1);
+    const LSHAngleHashFunction hash_function(id, feature_set_id,
+                                             n_features, n_bits);
+    std::ofstream of;
+    string outfile = path_join(hfs_dir,id);
+    outfile = outfile + ".hf";
+    if (!outfile.empty()) of.open(outfile.c_str());
+    if (!of) throw SMITHLABException("cannot write to file: " + outfile);
+    std::ostream out(outfile.empty() ? std::cout.rdbuf() : of.rdbuf());
+
+    out << hash_function << endl;
+    return outfile;
 }
 
 
@@ -514,6 +536,7 @@ main(int argc, const char **argv) {
 
     CROW_ROUTE(app, "/query")
     ([&](const crow::request &req) {
+
       string fv_path = req.url_params.get("path");
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
@@ -544,6 +567,7 @@ main(int argc, const char **argv) {
 
     CROW_ROUTE(app, "/insert")
     ([&](const crow::request &req) {
+
       string fv_path = req.url_params.get("path");
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
@@ -559,6 +583,7 @@ main(int argc, const char **argv) {
 
     CROW_ROUTE(app, "/delete")
     ([&](const crow::request &req) {
+
       string fv_path = req.url_params.get("path");
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
@@ -572,8 +597,12 @@ main(int argc, const char **argv) {
       return "Submitted";
     });
 
+
     CROW_ROUTE(app, "/refresh")
-    ([]() {
+    ([&]() {
+
+     string hf_path = add_new_hash_function(n_bits, n_features, feature_set_id,
+                                            hf_dir, hash_func_queue);
      std::chrono::time_point<std::chrono::system_clock> start, end;
      start = std::chrono::system_clock::now();
      execute_refresh(fv_lookup, hf_lookup, hash_func_queue, ht_lookup, 
