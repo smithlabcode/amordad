@@ -137,6 +137,7 @@ EngineDB::process_refresh(const LSHAngleHashFunction &hf,
 void
 EngineDB::initialize_db(const PathLookup &fv_paths,
                         const PathLookup &hf_paths,
+                        const queue<string> &hf_queue,
                         const HashTabLookup &hts, 
                         RegularNearestNeighborGraph &g,
                         bool VERBOSE) {
@@ -159,14 +160,17 @@ EngineDB::initialize_db(const PathLookup &fv_paths,
   if (VERBOSE)
     cerr << "insert feature vectors: 100% (" << fv_paths.size() << ")" << endl;
 
-  count = 0;
   // insert hash functions
-  for (PathLookup::const_iterator i(hf_paths.begin());
-       i != hf_paths.end(); ++i) {
+  count = 0;
+  queue<string> q = hf_queue;
+  while (!q.empty()) {
+    PathLookup::const_iterator i = hf_paths.find(q.front());
+    q.pop();
+    assert(i != hf_paths.end());
     insert_hash_function(i->first, i->second);
     if (VERBOSE)
       cerr << '\r' << "insert hash functions: "
-           << percent(count, hf_paths.size()) << "%\r";
+        << percent(count, hf_paths.size()) << "%\r";
     count += 1;
   }
   if (VERBOSE)

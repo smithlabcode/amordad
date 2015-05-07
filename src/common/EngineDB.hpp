@@ -88,6 +88,7 @@ public:
 
   void initialize_db(const PathLookup &fv_paths,
                      const PathLookup &hf_paths,
+                     const std::queue<std::string> &hf_queue,
                      const HashTabLookup &hts, 
                      RegularNearestNeighborGraph &g,
                      bool VERBOSE);

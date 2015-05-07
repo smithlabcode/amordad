@@ -365,7 +365,7 @@ get_database(const bool VERBOSE,
 
 static
 void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
-                        const string &feature_set_id, const string &hfs_dir, 
+                        const string &feature_set_id, const string &hf_dir, 
                         unordered_map<string, string> &hf_paths,
                         queue<string> hash_func_queue) {
 
@@ -374,7 +374,7 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
     const LSHAngleHashFunction hash_function(id, feature_set_id,
                                              n_features, n_bits);
     std::ofstream of;
-    string outfile = path_join(hfs_dir,id);
+    string outfile = path_join(hf_dir,id);
     outfile = outfile + ".hf";
     if (!outfile.empty()) of.open(outfile.c_str());
     if (!of) throw SMITHLABException("cannot write to file: " + outfile);
@@ -389,7 +389,7 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
 
 static
 string add_new_hash_function(size_t n_bits, size_t n_features, 
-                             const string &feature_set_id, const string &hfs_dir, 
+                             const string &feature_set_id, const string &hf_dir, 
                              queue<string> hash_func_queue) {
 
     // find the newest hash function in queue, increase id by 1
@@ -398,7 +398,7 @@ string add_new_hash_function(size_t n_bits, size_t n_features,
     const LSHAngleHashFunction hash_function(id, feature_set_id,
                                              n_features, n_bits);
     std::ofstream of;
-    string outfile = path_join(hfs_dir,id);
+    string outfile = path_join(hf_dir,id);
     outfile = outfile + ".hf";
     if (!outfile.empty()) of.open(outfile.c_str());
     if (!of) throw SMITHLABException("cannot write to file: " + outfile);
@@ -488,12 +488,13 @@ main(int argc, const char **argv) {
       add_hash_functions(hf_queue_size, n_bits, n_features, 
                          feature_set_id, hf_dir, hf_path_lookup,
                          hash_func_queue);
-      eng.initialize_db(fv_path_lookup, hf_path_lookup,
+      eng.initialize_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
                         ht_lookup, nng, VERBOSE); 
     }
 
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
+
     eng.read_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
                 ht_lookup, nng, VERBOSE);
     
@@ -545,6 +546,10 @@ main(int argc, const char **argv) {
     ([&](const crow::request &req) {
 
       string fv_path = req.url_params.get("path");
+
+      if(fv_path.empty())
+        throw SMITHLABException("invalid file path");
+
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
       const size_t n_neighbors = 20;
@@ -576,6 +581,10 @@ main(int argc, const char **argv) {
     ([&](const crow::request &req) {
 
       string fv_path = req.url_params.get("path");
+
+      if(fv_path.empty())
+        throw SMITHLABException("invalid file path");
+
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
       execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
@@ -592,6 +601,10 @@ main(int argc, const char **argv) {
     ([&](const crow::request &req) {
 
       string fv_path = req.url_params.get("path");
+
+      if(fv_path.empty())
+        throw SMITHLABException("invalid file path");
+
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
       FeatureVector fv = get_query(fv_path);

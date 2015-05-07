@@ -575,7 +575,7 @@ main(int argc, const char **argv) {
       add_hash_functions(hf_queue_size, n_bits, n_features, 
                          feature_set_id, hf_dir, hf_path_lookup,
                          hash_func_queue);
-      eng.initialize_db(fv_path_lookup, hf_path_lookup,
+      eng.initialize_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
                         ht_lookup, nng, VERBOSE); 
     }
 
