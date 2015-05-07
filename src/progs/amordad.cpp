@@ -418,7 +418,7 @@ main(int argc, const char **argv) {
 
     size_t n_bits = 0;
     size_t n_features = 0;
-    string feature_set_id = "features";
+    string feature_set_id = "FEATURES";
 
     string graph_name("THE_GRAPH");
     size_t max_degree = 1;
@@ -426,25 +426,28 @@ main(int argc, const char **argv) {
     size_t hf_queue_size = 0;
     string hf_dir;
 
-    string db = "amorgin";
+    string db;
     string pass;
     string user = "root";
     string server = "localhost";
 
     /****************** qcommand LINE OPTIONS ********************/
-    OptionParser opt_parse(strip_path(argv[0]), "amordad server supporting search, "
-        "insertion, deletion and refresh with "
-        "database residing on mysql");
+    OptionParser opt_parse(strip_path(argv[0]), 
+                           "amordad server supporting search, "
+                           "insertion, deletion and refresh with "
+                           "database residing on RDBMS");
 
     opt_parse.add_opt("bits", 'b', "bits in hash value", true, n_bits);
     opt_parse.add_opt("nfeat", 'n', "number of features", true, n_features);
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
     opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
-    opt_parse.add_opt("hfdir", 'h', "folder for hash functions", false, hf_dir);
+    opt_parse.add_opt("hfdir", 'h', "folder for hash functions", true, hf_dir);
     opt_parse.add_opt("mysql", 'm', "name of the mysql database", true, db);
     opt_parse.add_opt("pass", 'p', "password for the mysql database", true, pass);
-    opt_parse.add_opt("user", 'u', "username for the mysql database", true, user);
-    opt_parse.add_opt("server", 's', "server for the mysql database", true, server);
+    opt_parse.add_opt("user", 'u', "username for the mysql database"
+                                   " (Default: root)", false, user);
+    opt_parse.add_opt("server", 's', "server for the mysql database"
+                                     " (Default: localhost)", false, server);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
 
     vector<string> leftover_args;
