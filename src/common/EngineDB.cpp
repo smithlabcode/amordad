@@ -307,7 +307,7 @@ EngineDB::insert_graph_edge(const std::string &src,
                             const double dist) {
 
   mysqlpp::Query query = conn.query();
-  query << "insert into graph_edge values (" 
+  query << "insert ignore into graph_edge values (" 
     << mysqlpp::quote << src << ","
     << mysqlpp::quote << dst << ","
     << dist << ");";
