@@ -443,7 +443,7 @@ static
 void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
                         const string &feature_set_id, const string &hfs_dir, 
                         unordered_map<string, string> &hf_paths,
-                        queue<string> hash_func_queue) {
+                        queue<string> &hash_func_queue) {
 
   for(size_t i = 0; i < qsize; ++i) {
     string id = toa(i);

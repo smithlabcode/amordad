@@ -367,7 +367,7 @@ static
 void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
                         const string &feature_set_id, const string &hf_dir, 
                         unordered_map<string, string> &hf_paths,
-                        queue<string> hash_func_queue) {
+                        queue<string> &hash_func_queue) {
 
   for(size_t i = 0; i < qsize; ++i) {
     string id = toa(i);
@@ -390,7 +390,7 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
 static
 string add_new_hash_function(size_t n_bits, size_t n_features, 
                              const string &feature_set_id, const string &hf_dir, 
-                             queue<string> hash_func_queue) {
+                             const queue<string> &hash_func_queue) {
 
     // find the newest hash function in queue, increase id by 1
     string newest = hash_func_queue.back();
