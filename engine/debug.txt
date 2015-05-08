@@ -1,0 +1,8 @@
+### run amordad with all parameters ###
+./amordad -b 20 -n 1024 -d 20 -q 20 -h hf_20 -m amorgin_20 -p smithlab408A -u wenzhenl -s localhost -v
+
+### run amordad with all parameters ###
+./test_db -b 20 -n 1024 -d 20 -q 20 -h hf_20 -m amorgin_20 -p smithlab408A -u wenzhenl -s localhost -v refresh_test_20.txt insert_test.txt delete_test.txt
+
+### sql statement to make sure each node has no more than max_deg neighbors ####
+select feature_vector.id, count(graph_edge.dst) as OutDegree from graph_edge left join feature_vector on feature_vector.id=graph_edge.src group by src;
