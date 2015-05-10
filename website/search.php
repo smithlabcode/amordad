@@ -23,13 +23,28 @@
     <!-- Documentation extras -->
     <link href="css/index.css" rel="stylesheet">
 
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-
     <link rel="icon" href="img/amordad.ico">
+
+    <style>
+
+      span.query_header {
+        margin-right: 10px;
+        margin-bottom:10px;
+        font-size: 15px;
+        background-color: #0066FF;
+      }
+
+      div {
+        position: relative;
+        width: 70%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      hr {
+        border-top: dashed 1px #8c8b8b;
+      }
+    </style>
   </head>
 
   <body class="bs-docs-home">
@@ -55,27 +70,43 @@
       </div>
     </header>
 
-    <main>
-      <img alt=Amordad src="img/logo.png" id="logo_img">
-      <form action="search.php" method="post" enctype="multipart/form-data">
-        <div class="form-group">
-          <span class="btn btn-primary btn-lg btn-block btn-file">
-            Upload&hellip; 
-            <input type="file" id="fileToUpload" name="fileToUpload"
-            onchange="this.form.submit();">
-          </span>
-        </div>
-      </form>
-      <div id="example-file">
-      <p style="text-align: center;">Try it with this example file 
-        <a href="example/example.cv" download>
-        <span class="glyphicon glyphicon-paperclip"</span>
-        </a></p></div>
-    </main>
-
-    <!-- jQuery (necessary for Bootstrap's Javascript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.min.js"></script>
+    <div class="query">
+    <?php
+    ob_start();
+    error_reporting(E_ALL);
+    ini_set('display_errors', TRUE);
+    $upload_location = '/db/.upload/';
+    $allowedExts = array("cv");
+    $uniq_id = uniqid('amordad_upload_');
+    $sample = $upload_location.$uniq_id.".cv";
+    move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $sample);
+    $url = "http://localhost:18080/query?path=".urlencode($sample);
+    $file = file_get_contents($url);
+    $result = json_decode($file, true);
+    $id = $result["id"];
+    $query = "<p><span class=\"btn btn-outline-inverse btn-lg query_header\">$id</span></p>";
+    echo "$query";
+    $num_results = count($result)-1;
+    echo "$num_results results found<br>\n";
+    ?>
+    <p>Results below are sorted by Best Match</p>
+    <hr>
+    </div>
+    <div class="results">
+    <?php
+    require 'mysql_login.php';
+    asort($result);
+    foreach ($result as $key => $value) {
+      if($key != "id") {
+        echo "$key<br>\n";
+        echo "$value<br>\n";
+        $statement = "select url from sample where id=\"$key\"";
+        $row = mysqli_fetch_array(mysqli_query($con, $statement));
+        $url = $row["url"];
+        echo "<a href=$url/>$url</a><br>\n<hr>";
+      }
+    }
+    ?>
+    </div>
   </body>
 </html>
