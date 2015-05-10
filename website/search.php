@@ -83,11 +83,15 @@
     $url = "http://localhost:18080/query?path=".urlencode($sample);
     $file = file_get_contents($url);
     $result = json_decode($file, true);
+    $key_words = array("id", "total", "time");
     $id = $result["id"];
+    $total = number_format($result["total"]);
+    $time = $result["time"];
     $query = "<p><span class=\"btn btn-outline-inverse btn-lg query_header\">$id</span></p>";
     echo "$query";
-    $num_results = count($result)-1;
+    $num_results = count($result)-count($key_words);
     echo "$num_results results found<br>\n";
+    echo "Searched over $total samples in $time seconds.<br>\n";
     ?>
     <p>Results below are sorted by Best Match</p>
     <hr>
@@ -95,11 +99,11 @@
     <div class="results">
     <?php
     require 'mysql_login.php';
-    asort($result);
+    asort($result, SORT_NUMERIC);
     foreach ($result as $key => $value) {
-      if($key != "id") {
+      if(!in_array($key, $key_words)) {
         echo "$key<br>\n";
-        echo "$value<br>\n";
+        // echo "$value<br>\n";
         $statement = "select url from sample where id=\"$key\"";
         $row = mysqli_fetch_array(mysqli_query($con, $statement));
         $url = $row["url"];
