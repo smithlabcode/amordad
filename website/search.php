@@ -34,6 +34,11 @@
         background-color: #0066FF;
       }
 
+      span.tag {
+        margin-right: 5px;
+        margin-bottom:5px;
+      }
+
       div {
         position: relative;
         width: 70%;
@@ -87,8 +92,8 @@
     $id = $result["id"];
     $total = number_format($result["total"]);
     $time = $result["time"];
-    $query = "<p><span class=\"btn btn-outline-inverse btn-lg query_header\">$id</span></p>";
-    echo "$query";
+    $query = "<span class=\"btn btn-outline-inverse btn-lg query_header\">$id</span>";
+    echo "$query<br>\n";
     $num_results = count($result)-count($key_words);
     echo "$num_results results found<br>\n";
     echo "Searched over $total samples in $time seconds.<br>\n";
@@ -100,14 +105,28 @@
     <?php
     require 'mysql_login.php';
     asort($result, SORT_NUMERIC);
+
+    // $meta_fields = array("source", "biome", "country", "collection_date", "feature", "location", "material");
+    $ini_array = parse_ini_file("/db/.config.ini");
+    $meta_fields = $ini_array['meta_columns'];
+    $label_options = array("primary", "success", "info", "warning", "danger");
     foreach ($result as $key => $value) {
       if(!in_array($key, $key_words)) {
         echo "$key<br>\n";
-        // echo "$value<br>\n";
-        $statement = "select url from sample where id=\"$key\"";
+        $statement = "select * from sample where id=\"$key\"";
         $row = mysqli_fetch_array(mysqli_query($con, $statement));
         $url = $row["url"];
-        echo "<a href=$url/>$url</a><br>\n<hr>";
+        echo "<a href=$url/>$url</a><br>\n";
+        $num_meta = 0;
+        foreach ($meta_fields as $mf) {
+          $metadata = $row[$mf];
+          if($metadata) {
+            $label_option = $label_options[$num_meta%count($label_options)];
+            echo "<span class=\"label label-$label_option tag\">$metadata</span>";
+            $num_meta += 1;
+          }
+        }
+        echo "<hr>";
       }
     }
     ?>
