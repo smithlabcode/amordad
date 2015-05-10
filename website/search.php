@@ -37,6 +37,7 @@
       span.tag {
         margin-right: 5px;
         margin-bottom:5px;
+        display: inline-block;
       }
 
       div {
