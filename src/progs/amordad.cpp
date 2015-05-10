@@ -570,6 +570,8 @@ main(int argc, const char **argv) {
       }
 
       crow::json::wvalue ret;
+      ret["total"] = fv_lookup.size();
+      ret["time"] = elapsed.count();
       ret["id"] = fv.get_id();
       for (size_t i = 0; i < result.size(); ++i)
         ret[result[i].id] = result[i].val;
