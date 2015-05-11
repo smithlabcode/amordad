@@ -552,7 +552,7 @@ main(int argc, const char **argv) {
 
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
-      const size_t n_neighbors = 20;
+      const size_t n_neighbors = 30;
       const double max_proximity_radius = 0.75;
       vector<Result> result;
       FeatureVector fv = get_query(fv_path);
@@ -595,7 +595,12 @@ main(int argc, const char **argv) {
       std::chrono::duration<double> elapsed = end - start;
       if(VERBOSE)
         cerr << "Wall time = " << elapsed.count() << "s\n";
-      return "Submitted";
+
+      crow::json::wvalue ret;
+      ret["total"] = fv_lookup.size();
+      ret["time"] = elapsed.count();
+
+      return ret;
     });
 
 
@@ -616,7 +621,12 @@ main(int argc, const char **argv) {
       std::chrono::duration<double> elapsed = end - start;
       if(VERBOSE)
         cerr << "Wall time = " << elapsed.count() << "s\n";
-      return "Submitted";
+
+      crow::json::wvalue ret;
+      ret["total"] = fv_lookup.size();
+      ret["time"] = elapsed.count();
+
+      return ret;
     });
 
 
@@ -635,7 +645,11 @@ main(int argc, const char **argv) {
      if(VERBOSE)
        cerr << "Wall time = " << elapsed.count() << "s\n";
 
-     return "Submitted";
+      crow::json::wvalue ret;
+      ret["total"] = fv_lookup.size();
+      ret["time"] = elapsed.count();
+
+      return ret;
     });
 
     CROW_ROUTE(app, "/print/<string>")
