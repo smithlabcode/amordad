@@ -115,31 +115,37 @@
     </div>
     <div class="results">
     <?php
-    require 'mysql_login.php';
     asort($result, SORT_NUMERIC);
 
-    // $meta_fields = array("source", "biome", "country", "collection_date", "feature", "location", "material");
-    $ini_array = parse_ini_file("/db/.config.ini");
-    $meta_fields = $ini_array['meta_columns'];
     $label_options = array("primary", "success", "info", "warning", "danger");
     foreach ($result as $key => $value) {
       if(!in_array($key, $key_words)) {
         echo "$key<br>\n";
-        $statement = "select * from sample where id=\"$key\"";
-        $row = mysqli_fetch_array(mysqli_query($con, $statement));
-        $url = $row["url"];
-        echo "<a href=$url/>$url</a><br>\n";
         $num_meta = 0;
-        foreach ($meta_fields as $mf) {
-          $metadata = $row[$mf];
-          if($metadata) {
-            $label_option = $label_options[$num_meta%count($label_options)];
-            echo "<span class=\"label label-$label_option tag\">$metadata</span>";
-            $num_meta += 1;
+        $mgs = substr($key, strpos($key, '_') + 1);
+        $mgrast_url = "http://api.metagenomics.anl.gov/1/metagenome/$mgs";
+        $file = file_get_contents($mgrast_url);
+        $metadata = json_decode($file, true);
+        $url = $metadata['url'];
+        echo "<a href=$url>$url</a><br>\n";
+        foreach ($metadata as $field => $md ) {
+          if($field != 'url') {
+            if(!is_array($md)){
+              $label_option = $label_options[$num_meta%count($label_options)];
+              echo "<span class=\"label label-$label_option tag\">$field $md</span>";
+              $num_meta += 1;
+            }
+            else {
+              foreach ($md as $subfield => $submd) {
+                $label_option = $label_options[$num_meta%count($label_options)];
+                echo "<span class=\"label label-$label_option tag\">$subfield $submd</span>";
+                $num_meta += 1;
+              }
+            }
           }
         }
-        echo "<hr>";
       }
+      echo "<hr>";
     }
     ?>
     </div>

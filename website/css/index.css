@@ -1,0 +1,43 @@
+main {
+  position: relative;
+  top: 100px;
+}
+
+#logo_img {
+  height: 70px;
+  width: 200px;
+  display: block;
+  margin: auto;
+}
+
+.btn-file 
+{
+  position: relative;
+  overflow: hidden;
+  width: 65%;
+  margin: auto;
+}
+
+.btn-file input[type=file] 
+{
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 100%;
+  min-height: 100%;
+  font-size: 999px;
+  text-align: right;
+  filter: alpha(opacity=0);
+  opacity: 0;
+  outline: none;
+  background: white;
+  cursor: inherit;
+  display: block;
+}
+
+#example-file {
+  position: relative;
+  top: 10px;
+  width: 60%;
+  margin: auto;
+}
