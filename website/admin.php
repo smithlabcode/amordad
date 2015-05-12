@@ -60,8 +60,66 @@
         color: white;
         background-color: black;
       }
-
     </style>
+
+  <script>
+    function refresh() {
+      var xmlhttp;
+      if (window.XMLHttpRequest) {
+        xmlhttp = new XMLHttpRequest();
+      }
+      else {
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      xmlhttp.onreadystatechange = function() {
+        if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+          alert(xmlhttp.responseText);
+        }
+      }
+      xmlhttp.open("GET", "refresh.php", true);
+      xmlhttp.send();
+    }
+
+    function insert(path) {
+      var xmlhttp;
+      if (window.XMLHttpRequest) {
+        xmlhttp = new XMLHttpRequest();
+      }
+      else {
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      xmlhttp.onreadystatechange = function() {
+        if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+          alert(xmlhttp.responseText);
+        }
+      }
+      path = encodeURI(path);
+      xmlhttp.open("GET", "insert.php?path=" + path, true);
+      xmlhttp.send();
+    }
+
+
+    function delete_me() {
+      var xmlhttp;
+      if (window.XMLHttpRequest) {
+        xmlhttp = new XMLHttpRequest();
+      }
+      else {
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      xmlhttp.onreadystatechange = function() {
+        if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+          alert(xmlhttp.responseText);
+        }
+      }
+      path = document.getElementById("delpath").value;
+      path = encodeURI(path);
+      xmlhttp.open("GET", "delete.php?path=" + path, true);
+      xmlhttp.send();
+    }
+
+
+  </script>
   </head>
 
   <body class="bs-docs-home">
@@ -92,7 +150,7 @@
     <!-- refresh section -->
     <div id="refresh">
       <span style="color: blue; margin: 30px">One click to refresh the database</span> 
-      <button type="button" id="refresh_btn" class="btn btn-default btn-success">Refresh</button>
+      <button type="button" id="refresh_btn" class="btn btn-default btn-success" onclick="refresh()">Refresh</button>
     </div>
     <hr>
     <div id="insert">
@@ -107,8 +165,9 @@
                   <th style="text-align: center">path</th><th>insert</th>
                 </thead>';
     while($line = fgets($file)) {
+      $line = trim($line);
       $table .= '<tr><td style="text-align: left">'.$line.'</td>';
-      $table .= '<td align=center><button>Insert</button></td></tr>';
+      $table .= '<td align=center><button type=button onclick=insert("'.$line.'")>Insert</button></td></tr>';
       }
     $table .= '</table>';
     echo $table;
@@ -117,8 +176,8 @@
     <hr>
     <div id="delete">
     <span style="color: blue;">One click to delete a metagenome</span><br>
-    Metagenome ID:<input type="text" style="margin-left: 10px; width: 40%">
-    <button type="submit" style="margin-left: 30px">Delete Me</button>
+    Metagenome Path:<input id=delpath type="text" style="margin-left: 10px; width: 40%">
+    <button type="button" style="margin-left: 30px" onclick="delete_me()">Delete Me</button>
     </div>
     </main>
 
