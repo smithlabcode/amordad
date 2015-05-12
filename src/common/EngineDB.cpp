@@ -61,9 +61,9 @@ EngineDB:: EngineDB(const std::string db, const std::string server,
   db(db), server(server), user(user), pass(pass) { 
 
     // conn.set_option(new mysqlpp::MultiStatementsOption(true));
-    conn.set_option(new mysqlpp::ReconnectOption(true));
     if(!conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str()))
       throw SMITHLABException("Cannot connect the database");
+    conn.set_option(new mysqlpp::ReconnectOption(true));
 }
 
 

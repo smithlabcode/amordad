@@ -565,7 +565,7 @@ main(int argc, const char **argv) {
       if(VERBOSE) {
         cerr << "Wall time = " << elapsed.count() << "s\n";
         copy(result.begin(), result.end(),
-             std::ostream_iterator<Result>(cerr, "\t"));
+             std::ostream_iterator<Result>(cerr, "\n"));
         cerr << endl;
       }
 
@@ -648,6 +648,7 @@ main(int argc, const char **argv) {
       crow::json::wvalue ret;
       ret["total"] = fv_lookup.size();
       ret["time"] = elapsed.count();
+      ret["id"] = hash_func_queue.back();
 
       return ret;
     });
