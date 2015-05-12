@@ -327,11 +327,6 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   hfs[hash_fun.get_id()] = hash_fun;
   hf_queue.push(hash_fun.get_id());
 
-  // cerr << "after refresh hash tables:(" << hfs.size() << ')' << endl;
-  // cerr << "after refresh hash functions:(" << hts.size() << ')' << endl;
-  // cerr << "after refresh hash func queue:(" << hf_queue.size() << ')' << endl;
-
-  // cerr << g << endl;
   // update the database
   eng.process_refresh(hash_fun, hash_fun_file, fvs,
                       added_edges, g.get_maximum_degree());
@@ -389,7 +384,7 @@ void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
 
 static
 string add_new_hash_function(size_t n_bits, size_t n_features, 
-                             const string &feature_set_id, const string &hf_dir, 
+                             const string &feature_set_id, const string &hf_dir,
                              const queue<string> &hash_func_queue) {
 
     // find the newest hash function in queue, increase id by 1
@@ -416,22 +411,29 @@ main(int argc, const char **argv) {
 
     bool VERBOSE = false;
 
+    // hash function parameters
     size_t n_bits = 0;
     size_t n_features = 0;
     string feature_set_id = "FEATURES";
 
+    // regular NNG parameters
     string graph_name("THE_GRAPH");
     size_t max_degree = 1;
 
+    // hash queue size and location
     size_t hf_queue_size = 0;
     string hf_dir;
 
+    // engine database parameters
     string db;
     string pass;
     string user = "root";
     string server = "localhost";
 
-    /****************** qcommand LINE OPTIONS ********************/
+    // server parameter
+    size_t PORT = 18080;
+
+    /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), 
                            "amordad server supporting search, "
                            "insertion, deletion and refresh with "
@@ -440,14 +442,18 @@ main(int argc, const char **argv) {
     opt_parse.add_opt("bits", 'b', "bits in hash value", true, n_bits);
     opt_parse.add_opt("nfeat", 'n', "number of features", true, n_features);
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
-    opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
+    opt_parse.add_opt("qsize", 'q', "queue size for hash functions", 
+                      true, hf_queue_size);
     opt_parse.add_opt("hfdir", 'h', "folder for hash functions", true, hf_dir);
     opt_parse.add_opt("mysql", 'm', "name of the mysql database", true, db);
-    opt_parse.add_opt("pass", 'p', "password for the mysql database", true, pass);
-    opt_parse.add_opt("user", 'u', "username for the mysql database"
-                                   " (Default: root)", false, user);
-    opt_parse.add_opt("server", 's', "server for the mysql database"
-                                     " (Default: localhost)", false, server);
+    opt_parse.add_opt("pass", 'p', "password for the mysql database",
+                      true, pass);
+    opt_parse.add_opt("user", 'u', "username for the mysql database "
+                      "(Default: root)", false, user);
+    opt_parse.add_opt("server", 's', "server for the mysql database "
+                      "(Default: localhost)", false, server);
+    opt_parse.add_opt("PORT", 'P', "Port for the server to run at "
+                      "(Default: 18080)", false, PORT);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
 
     vector<string> leftover_args;
@@ -673,7 +679,7 @@ main(int argc, const char **argv) {
      return "Submitted";
     });
 
-    app.port(18080)
+    app.port(PORT)
        .run();
   }
   catch (const SMITHLABException &e) {
