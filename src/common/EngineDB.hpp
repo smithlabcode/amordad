@@ -44,7 +44,7 @@ std::ostream &
 operator<<(std::ostream &os, const Result &r);
 
 struct Edge {
-  Edge(const std::string &u, const std::string &v, const double d) 
+  Edge(const std::string &u, const std::string &v, const double d)
     : src(u), dst(v), dist(d) {}
   Edge() : dist(std::numeric_limits<double>::max()) {}
   std::string src;
@@ -68,7 +68,7 @@ typedef std::unordered_map<std::string, std::string> PathLookup;
 class EngineDB {
 public:
   EngineDB() {}
-  EngineDB(const std::string db, const std::string server, 
+  EngineDB(const std::string db, const std::string server,
            const std::string user, const std::string pass);
 
   bool process_deletion(const std::string &fv_id);
@@ -89,12 +89,12 @@ public:
   void initialize_db(const PathLookup &fv_paths,
                      const PathLookup &hf_paths,
                      const std::queue<std::string> &hf_queue,
-                     const HashTabLookup &hts, 
+                     const HashTabLookup &hts,
                      RegularNearestNeighborGraph &g,
                      bool VERBOSE);
 
   void read_db(PathLookup &fv_paths, PathLookup &hf_paths,
-               std::queue<std::string> &hf_queue, HashTabLookup &hts, 
+               std::queue<std::string> &hf_queue, HashTabLookup &hts,
                RegularNearestNeighborGraph &g, bool VERBOSE);
 
 private:
@@ -106,7 +106,7 @@ private:
 
   bool delete_feature_vec(const std::string &fv_id);
   bool insert_feature_vec(const std::string &fv_id, const std::string &path);
-  bool insert_hash_occupant(const std::string &hf_id, const size_t hash_value, 
+  bool insert_hash_occupant(const std::string &hf_id, const size_t hash_value,
                             const std::string &fv_id);
   bool insert_graph_edge(const std::string &src,
                          const std::string &dst,

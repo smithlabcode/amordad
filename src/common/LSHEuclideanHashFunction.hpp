@@ -44,16 +44,16 @@ public:
   LSHEuclideanHashFunction(const std::string &id_in, const std::string &fsi,
                        const std::vector<Parameter> &ps, const double w,
                        const std::vector<double> avs) :
-    id(id_in), feature_set_id(fsi), parameters(ps), 
+    id(id_in), feature_set_id(fsi), parameters(ps),
     uniform_seed(w), assist_vals(avs) {}
-  
+ 
   size_t operator()(const FeatureVector &fv) const;
-  
+ 
   std::string tostring() const;
   size_t size() const {return parameters.size();};
   std::string get_id() const {return id;}
   std::string get_feature_set_id() const {return feature_set_id;}
-  
+ 
 private:
   std::string id;
   std::string feature_set_id;

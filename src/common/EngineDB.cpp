@@ -56,9 +56,9 @@ operator<<(std::ostream &os, const Edge &e) {
 }
 
 
-EngineDB:: EngineDB(const std::string db, const std::string server, 
+EngineDB:: EngineDB(const std::string db, const std::string server,
                     const std::string user, const std::string pass) :
-  db(db), server(server), user(user), pass(pass) { 
+  db(db), server(server), user(user), pass(pass) {
 
     // conn.set_option(new mysqlpp::MultiStatementsOption(true));
     if(!conn.connect(db.c_str(), server.c_str(), user.c_str(), pass.c_str()))
@@ -71,14 +71,14 @@ bool
 EngineDB::process_deletion(const std::string &fv_id) {
   return delete_feature_vec(fv_id);
 }
-  
+ 
 
 bool
-EngineDB::process_insertion(const FeatureVector &fv, 
+EngineDB::process_insertion(const FeatureVector &fv,
                             const std::string &path,
                             const HashFunLookup &hfs,
                             const std::vector<Result> &neighbors) {
-  mysqlpp::Transaction trans(conn, 
+  mysqlpp::Transaction trans(conn,
       mysqlpp::Transaction::serializable,
       mysqlpp::Transaction::session);
 
@@ -102,13 +102,13 @@ EngineDB::process_insertion(const FeatureVector &fv,
 
 
 bool
-EngineDB::process_refresh(const LSHAngleHashFunction &hf, 
+EngineDB::process_refresh(const LSHAngleHashFunction &hf,
                           const std::string &path,
                           const FeatVecLookup &fvs,
                           const std::vector<Edge> &added_edges,
                           const size_t max_deg) {
 
-  mysqlpp::Transaction trans(conn, 
+  mysqlpp::Transaction trans(conn,
       mysqlpp::Transaction::serializable,
       mysqlpp::Transaction::session);
 
@@ -139,7 +139,7 @@ void
 EngineDB::initialize_db(const PathLookup &fv_paths,
                         const PathLookup &hf_paths,
                         const queue<string> &hf_queue,
-                        const HashTabLookup &hts, 
+                        const HashTabLookup &hts,
                         RegularNearestNeighborGraph &g,
                         bool VERBOSE) {
 
@@ -184,7 +184,7 @@ EngineDB::initialize_db(const PathLookup &fv_paths,
        i != hts.end(); ++i) {
     for (BucketMap::const_iterator j(i->second.begin());
          j != i->second.end(); ++j)
-      for (size_t k = 0; k < j->second.size(); ++k) 
+      for (size_t k = 0; k < j->second.size(); ++k)
         insert_hash_occupant(i->first, j->first, j->second[k]);
 
     if (VERBOSE)
@@ -221,7 +221,7 @@ EngineDB::initialize_db(const PathLookup &fv_paths,
 
 
 void
-EngineDB::read_db(PathLookup &fv_paths, 
+EngineDB::read_db(PathLookup &fv_paths,
                   PathLookup &hf_paths,
                   queue<string> &hf_queue,
                   HashTabLookup &hts,
@@ -234,14 +234,14 @@ EngineDB::read_db(PathLookup &fv_paths,
   get_feature_vecs(fv_paths);
 
   if (VERBOSE)
-    cerr << "read from db feature vectors: 100% (" 
+    cerr << "read from db feature vectors: 100% ("
          << fv_paths.size() << ")" << endl;
 
   get_hash_funcs(hf_paths);
   get_hash_func_queue(hf_queue);
 
   if (VERBOSE)
-    cerr << "read from db hash functions: 100% (" 
+    cerr << "read from db hash functions: 100% ("
          << hf_paths.size() << ")" << endl;
 
 
@@ -264,7 +264,7 @@ EngineDB::read_db(PathLookup &fv_paths,
   for(PathLookup::const_iterator i(fv_paths.begin());
       i != fv_paths.end(); ++i)
     g.add_vertex(i->first);
-  
+ 
   get_graph_edges(g);
   if (VERBOSE)
     cerr << "read from db graph: 100%" << endl;
@@ -275,31 +275,31 @@ bool
 EngineDB::delete_feature_vec(const std::string &fv_id) {
 
   mysqlpp::Query query = conn.query();
-  query << "delete from feature_vector where id=" 
+  query << "delete from feature_vector where id="
         << mysqlpp::quote << fv_id;
   return query.execute();
 }
- 
+
 
 bool
-EngineDB::insert_feature_vec(const std::string &fv_id, 
+EngineDB::insert_feature_vec(const std::string &fv_id,
                              const std::string &path) {
 
   mysqlpp::Query query = conn.query();
-  query << "insert into feature_vector values (" 
+  query << "insert into feature_vector values ("
         << mysqlpp::quote << fv_id << ","
         << mysqlpp::quote << path << ");";
   return query.execute();
 }
 
 
-bool 
+bool
 EngineDB::insert_hash_occupant(const std::string &hf_id,
-                               const size_t hash_value, 
+                               const size_t hash_value,
                                const std::string &fv_id) {
 
   mysqlpp::Query query = conn.query();
-  query << "insert into hash_table_bucket values (" 
+  query << "insert into hash_table_bucket values ("
     << mysqlpp::quote << hf_id << "," << hash_value << ","
     << mysqlpp::quote << fv_id << ");";
   return query.execute();
@@ -312,7 +312,7 @@ EngineDB::insert_graph_edge(const std::string &src,
                             const double dist) {
 
   mysqlpp::Query query = conn.query();
-  query << "insert ignore into graph_edge values (" 
+  query << "insert ignore into graph_edge values ("
     << mysqlpp::quote << src << ","
     << mysqlpp::quote << dst << ","
     << dist << ");";
@@ -331,7 +331,7 @@ EngineDB::insert_graph_edge(const std::string &src,
   size_t out_degree = get_out_degree(src);
   if(out_degree > max_deg) {
     mysqlpp::Query query = conn.query();
-    query << "delete from graph_edge where src = " 
+    query << "delete from graph_edge where src = "
           << mysqlpp::quote << src << "order by dist desc limit "
           << out_degree - max_deg;
     return query.execute();
@@ -340,23 +340,23 @@ EngineDB::insert_graph_edge(const std::string &src,
 }
 
 
-bool 
-EngineDB::insert_hash_function(const std::string &hf_id, 
+bool
+EngineDB::insert_hash_function(const std::string &hf_id,
                                const std::string &path) {
 
   mysqlpp::Query query = conn.query();
-  query << "insert into hash_function (id, path) values (" 
+  query << "insert into hash_function (id, path) values ("
     << mysqlpp::quote << hf_id << ","
     << mysqlpp::quote << path << ");";
   return query.execute();
 }
 
 
-bool 
+bool
 EngineDB::delete_hash_function(const std::string &hf_id) {
 
   mysqlpp::Query query = conn.query();
-  query << "delete from hash_function where id = " 
+  query << "delete from hash_function where id = "
         << mysqlpp::quote << hf_id;
   return query.execute();
 }
@@ -367,7 +367,7 @@ EngineDB::get_oldest_hash_function() {
 
   string old_hash = "";
   mysqlpp::Query query = conn.query();
-  query << "select id from hash_function order by update_time asc limit 1"; 
+  query << "select id from hash_function order by update_time asc limit 1";
   if(mysqlpp::StoreQueryResult res = query.store()) {
     if(res.num_rows() > 0) {
       res[0][0].to_string(old_hash);
@@ -385,7 +385,7 @@ EngineDB::get_newest_hash_function() {
 
   string new_hash = "";
   mysqlpp::Query query = conn.query();
-  query << "select id from hash_function order by update_time desc limit 1"; 
+  query << "select id from hash_function order by update_time desc limit 1";
   if(mysqlpp::StoreQueryResult res = query.store()) {
     if(res.num_rows() > 0) {
       res[0][0].to_string(new_hash);
@@ -398,11 +398,11 @@ EngineDB::get_newest_hash_function() {
 }
 
 
-bool 
+bool
 EngineDB::delete_oldest_hash_function() {
 
   mysqlpp::Query query = conn.query();
-  query << "delete from hash_function order by update_time asc limit 1"; 
+  query << "delete from hash_function order by update_time asc limit 1";
   return query.execute();
 }
 
@@ -411,7 +411,7 @@ void
 EngineDB::get_feature_vecs(PathLookup &fv_paths) {
 
   mysqlpp::Query query = conn.query();
-  query << "select id, path from feature_vector"; 
+  query << "select id, path from feature_vector";
   if(mysqlpp::StoreQueryResult res = query.store()) {
     for(size_t i = 0; i < res.num_rows(); ++i) {
       string id = "";
@@ -430,7 +430,7 @@ void
 EngineDB::get_hash_funcs(PathLookup &hf_paths) {
 
   mysqlpp::Query query = conn.query();
-  query << "select id, path from hash_function"; 
+  query << "select id, path from hash_function";
   if(mysqlpp::StoreQueryResult res = query.store()) {
     for(size_t i = 0; i < res.num_rows(); ++i) {
       string id = "";
@@ -513,7 +513,7 @@ void
 EngineDB::get_hash_func_queue(std::queue<std::string> &hf_queue) {
 
   mysqlpp::Query query = conn.query();
-  query << "select * from hash_function order by update_time asc"; 
+  query << "select * from hash_function order by update_time asc";
   if(mysqlpp::StoreQueryResult res = query.store()) {
     for(size_t i = 0; i < res.num_rows(); ++i) {
       string id = "";

@@ -59,7 +59,7 @@ get_gaussian(const double mu, const double sd) {
 }
 
 
-static void 
+static void
 generate_random_parameter(const size_t dim, const double w, Parameter &ep) {
   ep.rand_vec.resize(dim, 0.0);
   for (size_t i = 0; i < dim; ++i)
@@ -82,7 +82,7 @@ LSHEuclideanHashFunction::LSHEuclideanHashFunction(const string &id_in,
   }
 
   assist_vals.resize(n_bits, 0.0);
-  for (size_t i = 0; i < n_bits; ++i) 
+  for (size_t i = 0; i < n_bits; ++i)
     // +1 to avoid zero
     assist_vals[i] = static_cast<double>(rand() % RAND_MAX + 1);
 }
@@ -97,15 +97,15 @@ LSHEuclideanHashFunction::LSHEuclideanHashFunction(const string &id_in,
 // INPUT
 std::istream&
 operator>>(std::istream &in, LSHEuclideanHashFunction &hf) {
-  
+
   // first read the id for this hash function
   string hf_id;
   getline(in, hf_id);
-  
+
   // second line is for the feature set
   string fs_id;
   getline(in, fs_id);
-  
+
   // third line is for the uniform seed
   string line;
   getline(in, line);
@@ -124,16 +124,16 @@ operator>>(std::istream &in, LSHEuclideanHashFunction &hf) {
   // read parameters
   // each line is rand vector followed by uniform val
   size_t n_dimensions = 0;
-  
+
   vector<Parameter> parameters;
   while (getline(in, line)) {
-    
+  
     vector<double> current(n_dimensions);
-    
+  
     std::istringstream iss(line);
-    
+  
     double single_coord = 0.0;
-    
+  
     if (n_dimensions == 0) {
       // dimensions unknown for first unit vector
       while (iss >> single_coord)
@@ -145,20 +145,20 @@ operator>>(std::istream &in, LSHEuclideanHashFunction &hf) {
       while (iss >> single_coord)
         current[i++] = single_coord;
     }
-    
+  
     if (n_dimensions != current.size())
       throw SMITHLABException("inconsistent hash function lines");
-    
+  
     Parameter ep;
     ep.rand_vec.assign(current.begin(), current.end()-1);
     ep.rand_uniform = current.back();
     parameters.push_back(ep);
   }
-  
+
   assert(parameters.size() > 0);
   assert(assist_vals.size() == parameters.size());
   hf = LSHEuclideanHashFunction(hf_id, fs_id, parameters, w, assist_vals);
-  return in;  
+  return in;
 }
 
 
@@ -178,8 +178,8 @@ LSHEuclideanHashFunction::tostring() const {
        std::ostream_iterator<double>(oss, "\t"));
   for (size_t i = 0; i < parameters.size(); ++i) {
     oss << '\n';
-    copy(parameters[i].rand_vec.begin(), 
-         parameters[i].rand_vec.end(), 
+    copy(parameters[i].rand_vec.begin(),
+         parameters[i].rand_vec.end(),
          std::ostream_iterator<double>(oss, "\t"));
     oss << parameters[i].rand_uniform << "\t";
   }
@@ -187,7 +187,7 @@ LSHEuclideanHashFunction::tostring() const {
 }
 
 
-size_t 
+size_t
 LSHEuclideanHashFunction::operator()(const FeatureVector &fv) const {
   const size_t PRIME = (1ul << 32) - 5;
   size_t hash_value = 0ul;
@@ -196,7 +196,7 @@ LSHEuclideanHashFunction::operator()(const FeatureVector &fv) const {
                                  parameters[i].rand_vec.end(),
                                  fv.begin(), 0.0);
     size_t inner_hash_value = static_cast<size_t>(floor(
-                              (inner + parameters[i].rand_uniform) 
+                              (inner + parameters[i].rand_uniform)
                               / uniform_seed));
     hash_value += static_cast<size_t>(inner_hash_value * assist_vals[i]) % PRIME;
     hash_value %= PRIME;

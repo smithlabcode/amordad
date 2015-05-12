@@ -88,7 +88,7 @@ evaluate_candidates(const unordered_map<string, FeatureVector> &fvs,
     const FeatureVector fv(fvs.find(*i)->second);
     const double dist = query.compute_angle(fv);
     if (dist < current_dist_cutoff) {
-      if (pq.size() == n_neighbors) 
+      if (pq.size() == n_neighbors)
         pq.pop();
       pq.push(Result(*i, dist));
 
@@ -171,7 +171,7 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
   fvs[query.get_id()] = query;
 
   unordered_set<string> candidates;
-  
+ 
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::iterator i(hts.begin());
        i != hts.end(); ++i) {
@@ -186,7 +186,7 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
 
     if (bucket != i->second.end())
       candidates.insert(bucket->second.begin(), bucket->second.end());
-    
+   
     // INSERT THE QUERY INTO EACH HASH TABLE
     i->second.insert(query, bucket_number);
   }
@@ -208,7 +208,7 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
   double max = std::numeric_limits<double>::max();
   size_t max_deg = g.get_maximum_degree();
   evaluate_candidates(fvs, query, max_deg, max, candidates, neighbors);
-  
+ 
   // CONNECT THE QUERY TO EACH OF THE "RESULT" NEIGHBORS
   // IN THE GRAPH
   for (vector<Result>::const_iterator i(neighbors.begin());
@@ -227,7 +227,7 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
                  RegularNearestNeighborGraph &g,
                  const FeatureVector &query,
                  EngineDB &eng) {
-  
+ 
   // iterate over hash tables
   for (unordered_map<string, LSHTab>::iterator i(hts.begin());
        i != hts.end(); ++i) {
@@ -256,7 +256,7 @@ execute_deletion(unordered_map<string, FeatureVector> &fvs,
 
 
 static void
-add_relations_from_bucket(const vector<string> &bucket, 
+add_relations_from_bucket(const vector<string> &bucket,
                           const FeatVecLookup &featvecs,
                           RegularNearestNeighborGraph &nng,
                           vector<Edge> &added_edges) {
@@ -311,7 +311,7 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
 
   vector<Edge> added_edges;
   // iterate over buckets
-  for (BucketMap::const_iterator j(hash_table.begin()); 
+  for (BucketMap::const_iterator j(hash_table.begin());
        j != hash_table.end(); ++j)
     add_relations_from_bucket(j->second, fvs, g, added_edges);
 
@@ -335,10 +335,10 @@ execute_refresh(const unordered_map<string, FeatureVector> &fvs,
   eng.process_refresh(hash_fun, hash_fun_file, fvs,
                       added_edges, g.get_maximum_degree());
 }
- 
+
 
 static void
-get_database(const bool VERBOSE, 
+get_database(const bool VERBOSE,
              unordered_map<string, string> &paths,
              unordered_map<string, FeatureVector> &db) {
 
@@ -405,27 +405,27 @@ execute_commands(const string &command_file,
       commands.push_back(make_pair(operation, query_path));
   }
 
-  
+ 
   for(size_t i = 0; i < commands.size(); ++i) {
 
     // execute different functions based on the command
     if(commands[i].first == "query") {
       FeatureVector fv = get_query(commands[i].second);
       vector<Result> results;
-      execute_query(fvs, hfs, hts, g, fv, n_neighbors, 
+      execute_query(fvs, hfs, hts, g, fv, n_neighbors,
           max_proximity_radius, results);
     }
     else if(commands[i].first == "insert") {
       string query_path = commands[i].second;
-      execute_insertion(fvs, hfs, hts, g, query_path, eng); 
+      execute_insertion(fvs, hfs, hts, g, query_path, eng);
     }
     else if(commands[i].first == "delete") {
       FeatureVector fv = get_query(commands[i].second);
-      execute_deletion(fvs, hfs, hts, g, fv, eng); 
+      execute_deletion(fvs, hfs, hts, g, fv, eng);
     }
     else if(commands[i].first == "refresh") {
       string hash_fun_file = commands[i].second;
-      execute_refresh(fvs, hfs, hf_queue, hts, g, hash_fun_file, eng); 
+      execute_refresh(fvs, hfs, hf_queue, hts, g, hash_fun_file, eng);
     }
     else
       throw SMITHLABException("unknown command");
@@ -440,8 +440,8 @@ execute_commands(const string &command_file,
 
 
 static
-void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features, 
-                        const string &feature_set_id, const string &hfs_dir, 
+void add_hash_functions(size_t qsize, size_t n_bits, size_t n_features,
+                        const string &feature_set_id, const string &hfs_dir,
                         unordered_map<string, string> &hf_paths,
                         queue<string> &hash_func_queue) {
 
@@ -494,12 +494,16 @@ main(int argc, const char **argv) {
     opt_parse.add_opt("nfeat", 'n', "number of features", true, n_features);
     // opt_parse.add_opt("name", 'n', "name for the graph", false, graph_name);
     opt_parse.add_opt("deg", 'd', "max out degree of graph", true, max_degree);
-    opt_parse.add_opt("qsize", 'q', "queue size for hash functions", true, hf_queue_size);
+    opt_parse.add_opt("qsize", 'q', "queue size for hash functions",
+                      true, hf_queue_size);
     opt_parse.add_opt("hfdir", 'h', "folder for hash functions", false, hf_dir);
     opt_parse.add_opt("mysql", 'm', "name of the mysql database", true, db);
-    opt_parse.add_opt("pass", 'p', "password for the mysql database", true, pass);
-    opt_parse.add_opt("user", 'u', "username for the mysql database", true, user);
-    opt_parse.add_opt("server", 's', "server for the mysql database", true, server);
+    opt_parse.add_opt("pass", 'p', "password for the mysql database",
+                      true, pass);
+    opt_parse.add_opt("user", 'u', "username for the mysql database",
+                      true, user);
+    opt_parse.add_opt("server", 's', "server for the mysql database",
+                      true, server);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
 
     vector<string> leftover_args;
@@ -519,7 +523,7 @@ main(int argc, const char **argv) {
     }
     /****************** END COMMAND LINE OPTIONS *****************/
 
-    
+   
     ////////////////////////////////////////////////////////////////////////
     ///// READ DATA FROM ENGINE DATABASE ///////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
@@ -537,18 +541,18 @@ main(int argc, const char **argv) {
       if(VERBOSE)
         cerr << "INITIALIZING HASH FUNCTIONS" << endl;
 
-      add_hash_functions(hf_queue_size, n_bits, n_features, 
+      add_hash_functions(hf_queue_size, n_bits, n_features,
                          feature_set_id, hf_dir, hf_path_lookup,
                          hash_func_queue);
       eng.initialize_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
-                        ht_lookup, nng, VERBOSE); 
+                        ht_lookup, nng, VERBOSE);
     }
 
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
     eng.read_db(fv_path_lookup, hf_path_lookup, hash_func_queue,
                 ht_lookup, nng, VERBOSE);
-    
+   
     // READING SAMPLES IN DATABASE
     unordered_map<string, FeatureVector> fv_lookup;
     get_database(VERBOSE, fv_path_lookup, fv_lookup);
@@ -567,7 +571,7 @@ main(int argc, const char **argv) {
                                 i->second);
       LSHFun hf;
       hf_in >> hf;
-      if(hf.get_id() != i->first) 
+      if(hf.get_id() != i->first)
         throw SMITHLABException("unconsistent hash function ids");
       hf_lookup[hf.get_id()] = hf;
       if (VERBOSE)
