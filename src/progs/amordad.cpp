@@ -43,7 +43,8 @@
 #include "LSHAngleHashFunction.hpp"
 
 #include "EngineDB.hpp"
-#include "crow_all.hpp"
+#include "crow.h"
+#include "json.h"
 
 using std::string;
 using std::vector;

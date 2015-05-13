@@ -36,10 +36,12 @@ endif
 
 COMMON = ../common
 MYSQL = /usr/include/mysql
+CROW = ../crow/include
 
 INCLUDEDIRS = $(SMITHLAB_CPP) $(COMMON)
 INCLUDEDIRS += $(BOOST)
 INCLUDEDIRS += $(MYSQL)
+INCLUDEDIRS += $(CROW)
 INCLUDEARGS = $(addprefix -I,$(INCLUDEDIRS))
 
 CXX = g++
