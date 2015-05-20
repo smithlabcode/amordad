@@ -552,132 +552,144 @@ main(int argc, const char **argv) {
     CROW_ROUTE(app, "/query")
     ([&](const crow::request &req) {
 
-      string fv_path = req.url_params.get("path");
-
-      if(fv_path.empty())
-        throw SMITHLABException("invalid file path");
-
-      std::chrono::time_point<std::chrono::system_clock> start, end;
-      start = std::chrono::system_clock::now();
-      const size_t n_neighbors = 30;
-      const double max_proximity_radius = 0.75;
-      vector<Result> result;
-      FeatureVector fv = get_query(fv_path);
-      execute_query(fv_lookup, hf_lookup, ht_lookup, 
-                    nng, fv, n_neighbors, max_proximity_radius,
-                    result);
-      end = std::chrono::system_clock::now();
-      std::chrono::duration<double> elapsed = end - start;
-
-      if(VERBOSE) {
-        cerr << "Wall time = " << elapsed.count() << "s\n";
-        copy(result.begin(), result.end(),
-             std::ostream_iterator<Result>(cerr, "\n"));
-        cerr << endl;
-      }
-
       crow::json::wvalue ret;
-      ret["total"] = fv_lookup.size();
-      ret["time"] = elapsed.count();
-      ret["id"] = fv.get_id();
-      for (size_t i = 0; i < result.size(); ++i)
-        ret[result[i].id] = result[i].val;
 
-      return ret;
+      try {
+        string fv_path = req.url_params.get("path");
+
+        if(fv_path.empty())
+          throw SMITHLABException("invalid file path");
+
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        start = std::chrono::system_clock::now();
+        const size_t n_neighbors = 30;
+        const double max_proximity_radius = 0.75;
+        vector<Result> result;
+        FeatureVector fv = get_query(fv_path);
+        execute_query(fv_lookup, hf_lookup, ht_lookup, 
+                      nng, fv, n_neighbors, max_proximity_radius,
+                      result);
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+
+        if(VERBOSE) {
+          cerr << "Wall time = " << elapsed.count() << "s\n";
+          copy(result.begin(), result.end(),
+               std::ostream_iterator<Result>(cerr, "\n"));
+          cerr << endl;
+        }
+
+        ret["total"] = fv_lookup.size();
+        ret["time"] = elapsed.count();
+        ret["id"] = fv.get_id();
+        for (size_t i = 0; i < result.size(); ++i)
+          ret[result[i].id] = result[i].val;
+
+        return ret;
+      }
+      catch (const SMITHLABException &e) {
+        cerr << e.what() << endl;
+        ret["error"] = e.what();
+        return ret;
+      }
     });
 
     CROW_ROUTE(app, "/insert")
     ([&](const crow::request &req) {
 
-      string fv_path = req.url_params.get("path");
-
-      if(fv_path.empty())
-        throw SMITHLABException("invalid file path");
-
-      std::chrono::time_point<std::chrono::system_clock> start, end;
-      start = std::chrono::system_clock::now();
-      execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
-                        nng, fv_path, eng);
-      end = std::chrono::system_clock::now();
-      std::chrono::duration<double> elapsed = end - start;
-      if(VERBOSE)
-        cerr << "Wall time = " << elapsed.count() << "s\n";
-
       crow::json::wvalue ret;
-      ret["total"] = fv_lookup.size();
-      ret["time"] = elapsed.count();
 
-      return ret;
+      try {
+        string fv_path = req.url_params.get("path");
+
+        if(fv_path.empty())
+          throw SMITHLABException("invalid file path");
+
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        start = std::chrono::system_clock::now();
+        execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
+                          nng, fv_path, eng);
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+        if(VERBOSE)
+          cerr << "Wall time = " << elapsed.count() << "s\n";
+
+        ret["total"] = fv_lookup.size();
+        ret["time"] = elapsed.count();
+
+        return ret;
+      }
+      catch (const SMITHLABException &e) {
+        cerr << e.what() << endl;
+        ret["error"] = e.what();
+        return ret;
+      }
     });
 
 
     CROW_ROUTE(app, "/delete")
     ([&](const crow::request &req) {
 
-      string fv_path = req.url_params.get("path");
-
-      if(fv_path.empty())
-        throw SMITHLABException("invalid file path");
-
-      std::chrono::time_point<std::chrono::system_clock> start, end;
-      start = std::chrono::system_clock::now();
-      FeatureVector fv = get_query(fv_path);
-      execute_deletion(fv_lookup, hf_lookup, ht_lookup, 
-                       nng, fv, eng);
-      end = std::chrono::system_clock::now();
-      std::chrono::duration<double> elapsed = end - start;
-      if(VERBOSE)
-        cerr << "Wall time = " << elapsed.count() << "s\n";
-
       crow::json::wvalue ret;
-      ret["total"] = fv_lookup.size();
-      ret["time"] = elapsed.count();
 
-      return ret;
+      try {
+        string fv_path = req.url_params.get("path");
+
+        if(fv_path.empty())
+          throw SMITHLABException("invalid file path");
+
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        start = std::chrono::system_clock::now();
+        FeatureVector fv = get_query(fv_path);
+        execute_deletion(fv_lookup, hf_lookup, ht_lookup, 
+                         nng, fv, eng);
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+        if(VERBOSE)
+          cerr << "Wall time = " << elapsed.count() << "s\n";
+
+        ret["total"] = fv_lookup.size();
+        ret["time"] = elapsed.count();
+
+        return ret;
+      }
+      catch (const SMITHLABException &e) {
+        cerr << e.what() << endl;
+        ret["error"] = e.what();
+        return ret;
+      }
     });
 
 
     CROW_ROUTE(app, "/refresh")
     ([&]() {
 
-     string hf_path = add_new_hash_function(n_bits, n_features, feature_set_id,
-                                            hf_dir, hash_func_queue);
-     std::chrono::time_point<std::chrono::system_clock> start, end;
-     start = std::chrono::system_clock::now();
-     execute_refresh(fv_lookup, hf_lookup, hash_func_queue, ht_lookup, 
-                     nng, hf_path, eng);
-     end = std::chrono::system_clock::now();
-     std::chrono::duration<double> elapsed = end - start;
-
-     if(VERBOSE)
-       cerr << "Wall time = " << elapsed.count() << "s\n";
-
       crow::json::wvalue ret;
-      ret["total"] = fv_lookup.size();
-      ret["time"] = elapsed.count();
-      ret["id"] = hash_func_queue.back();
 
-      return ret;
-    });
+      try {
+        string hf_path = add_new_hash_function(n_bits, n_features, feature_set_id,
+                                               hf_dir, hash_func_queue);
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        start = std::chrono::system_clock::now();
+        execute_refresh(fv_lookup, hf_lookup, hash_func_queue, ht_lookup, 
+                        nng, hf_path, eng);
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
 
-    CROW_ROUTE(app, "/print/<string>")
-    ([&](string data_struct) {
-     if(data_struct == "graph")
-       cerr << nng << endl;
+        if(VERBOSE)
+          cerr << "Wall time = " << elapsed.count() << "s\n";
 
-     else if(data_struct == "hfs")
-       for (unordered_map<string, LSHFun>::iterator i(hf_lookup.begin());
-            i != hf_lookup.end(); ++i)
-         cerr << i->second << endl;
+        ret["total"] = fv_lookup.size();
+        ret["time"] = elapsed.count();
+        ret["id"] = hash_func_queue.back();
 
-     else if(data_struct == "hts")
-       for (unordered_map<string, LSHTab>::iterator i(ht_lookup.begin());
-            i != ht_lookup.end(); ++i)
-         cerr << i->second << endl;
-     else if(data_struct == "fvs")
-       cerr << "number of feature vectors: (" << fv_lookup.size() 
-            << ')' << endl;
-     return "Submitted";
+        return ret;
+      }
+      catch (const SMITHLABException &e) {
+        cerr << e.what() << endl;
+        ret["error"] = e.what();
+        return ret;
+      }
     });
 
     app.port(PORT)
