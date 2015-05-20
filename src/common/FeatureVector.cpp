@@ -73,7 +73,8 @@ FeatureVector::tostring_with_labels(const vector<string> &labels) const {
 std::istream&
 operator>>(std::istream &in, FeatureVector &fv) {
   string id;
-  getline(in, id);
+  if(!getline(in, id))
+    throw SMITHLABException("bad feature vector: empty file");
   
   string label, value, line;
   vector<double> values;
