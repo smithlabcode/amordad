@@ -58,7 +58,10 @@ FeatureVector::tostring() const {
 
 string
 FeatureVector::tostring_with_labels(const vector<string> &labels) const {
-  assert(values.size() == labels.size());
+  if (values.size() != labels.size())
+    throw SMITHLABException("feature vector values size is not "
+        "equal to labels size");
+
   std::ostringstream oss;
   oss << id;
   for (size_t i = 0; i < labels.size(); ++i)
@@ -111,7 +114,9 @@ load_features_and_labels(const string &filename,
 
 double
 FeatureVector::compute_angle(const FeatureVector &other) const {
-  assert(values.size() == other.values.size());
+  if (values.size() != other.values.size())
+    throw SMITHLABException("cannot compute angle: different feature"
+        "vector size: (" + id + ',' + other.get_id() + ")");
   double angle = inner_product(values.begin(), values.end(), 
                                other.values.begin(), 0.0)/(norm*other.norm);
   angle = std::max(-1.0, std::min(1.0, angle));
