@@ -32,6 +32,8 @@
 #include <iostream>
 #include <chrono>
 
+#include <gsl/gsl_statistics_double.h>
+
 #include "OptionParser.hpp"
 #include "smithlab_utils.hpp"
 #include "smithlab_os.hpp"
@@ -64,13 +66,23 @@ typedef unordered_map<string, FeatureVector> FeatVecLookup;
 
 
 static FeatureVector
-get_query(const string &query_file) {
+get_feat_vec(const string &fv_path) {
 
   FeatureVector fv;
-  std::ifstream in(query_file.c_str());
+  std::ifstream in(fv_path.c_str());
   if (!in)
-    throw SMITHLABException("bad feature vector file: " + query_file);
+    throw SMITHLABException("bad feature vector file: " + fv_path);
   in >> fv;
+
+  // normalize feature vector
+  const double mean = gsl_stats_mean(&fv[0], 1, fv.size());
+  const double sd = gsl_stats_sd_m(&fv[0], 1, fv.size(), mean);
+
+  transform(fv.begin(), fv.end(), fv.begin(), 
+            bind2nd(std::minus<double>(), mean));
+  transform(fv.begin(), fv.end(), fv.begin(), 
+            bind2nd(std::divides<double>(), sd));
+
   return fv;
 }
 
@@ -162,7 +174,7 @@ execute_insertion(unordered_map<string, FeatureVector> &fvs,
                   const string  &query_path,
                   EngineDB &eng) {
 
-  FeatureVector query = get_query(query_path);
+  FeatureVector query = get_feat_vec(query_path);
 
   /// TEST WHETHER QUERY IS ALREADY IN GRAPH
   /// IF NOT ADD QUERY AS A NEW VERTEX
@@ -342,11 +354,9 @@ get_database(const bool VERBOSE,
   size_t count = 0;
   for(unordered_map<string, string>::const_iterator i(paths.begin());
       i != paths.end(); ++i) {
-    FeatureVector fv;
-    std::ifstream in(i->second.c_str());
-    if (!in)
-      throw SMITHLABException("bad feature vector file: " + i->second);
-    in >> fv;
+
+    FeatureVector fv = get_feat_vec(i->second.c_str());
+
     if(fv.get_id() != i->first)
       throw SMITHLABException("unconsistent feature vector ids");
     db[fv.get_id()] = fv;
@@ -616,7 +626,7 @@ main(int argc, const char **argv) {
         const size_t n_neighbors = 30;
         const double max_proximity_radius = 0.75;
         vector<Result> result;
-        FeatureVector fv = get_query(fv_path);
+        FeatureVector fv = get_feat_vec(fv_path);
         execute_query(fv_lookup, hf_lookup, ht_lookup, 
                       nng, fv, n_neighbors, max_proximity_radius,
                       result);
@@ -691,7 +701,7 @@ main(int argc, const char **argv) {
 
         std::chrono::time_point<std::chrono::system_clock> start, end;
         start = std::chrono::system_clock::now();
-        FeatureVector fv = get_query(fv_path);
+        FeatureVector fv = get_feat_vec(fv_path);
         execute_deletion(fv_lookup, hf_lookup, ht_lookup, 
                          nng, fv, eng);
         end = std::chrono::system_clock::now();
