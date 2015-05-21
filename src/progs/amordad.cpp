@@ -83,7 +83,13 @@ get_feat_vec(const string &fv_path) {
   transform(fv.begin(), fv.end(), fv.begin(), 
             bind2nd(std::divides<double>(), sd));
 
-  return fv;
+  // don't forget to change norm
+  vector<double> values;
+  for(vector<double>::const_iterator it(fv.begin()); it != fv.end(); ++it)
+    values.push_back(*it);
+  FeatureVector valid_fv(fv.get_id(), values);
+
+  return valid_fv;
 }
 
 
