@@ -583,20 +583,27 @@ main(int argc, const char **argv) {
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
 
+      vector<string> feature_vectors;
+
       string fv_path;
-      size_t num_features_initialized = 0;
-      while(getline(init_in, fv_path)) {
-        execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
-                          nng, fv_path, eng);
-        num_features_initialized++;
+      while(getline(init_in, fv_path))
+        feature_vectors.push_back(fv_path);
+
+      for(size_t i = 0; i < feature_vectors.size(); ++i) {
+         execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
+                           nng, feature_vectors[i], eng);
+         if (VERBOSE)
+           cerr << "\rinitializing database: "
+                << percent(i, feature_vectors.size()) << "%\r";
       }
+      if (VERBOSE)
+        cerr << "initializing database: 100% (" << feature_vectors.size()
+             << ")" << endl;
 
       end = std::chrono::system_clock::now();
       std::chrono::duration<double> elapsed = end - start;
-      if(VERBOSE) {
-        cerr << num_features_initialized << " feature vectors inserted" << endl;
+      if(VERBOSE)
         cerr << "initialization time = " << elapsed.count() << "s\n";
-      }
     }
 
 
