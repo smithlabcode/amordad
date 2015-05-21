@@ -405,6 +405,18 @@ string add_new_hash_function(size_t n_bits, size_t n_features,
 }
 
 
+static bool
+validate_file(const string &filename, char open_mode) {
+  if (open_mode == 'r')
+    return (get_filesize(filename) > 0);
+  else { // if (open_mode == 'w') {
+    std::ofstream check_out(filename.c_str());
+    if (!check_out) return false;
+    else return true;
+  }
+}
+
+
 int
 main(int argc, const char **argv) {
 
@@ -434,6 +446,8 @@ main(int argc, const char **argv) {
     // server parameter
     size_t PORT = 18080;
 
+    string init_file;
+
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), 
                            "amordad server supporting search, "
@@ -455,6 +469,8 @@ main(int argc, const char **argv) {
                       "(Default: localhost)", false, server);
     opt_parse.add_opt("PORT", 'P', "Port for the server to run at "
                       "(Default: 18080)", false, PORT);
+    opt_parse.add_opt("initfile", 'i', "initialize database by providing "
+                      "feature paths", false, init_file);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
 
     vector<string> leftover_args;
@@ -538,6 +554,41 @@ main(int argc, const char **argv) {
 
     if(VERBOSE)
       cerr << "load database time = " << elapsed.count() << "s\n";
+
+
+    ////////////////////////////////////////////////////////////////////////
+    // IF INITIALIZATION FEATURE PATHS FILE PROVIDED, INITIALIZE DATABASE ///
+    // //////////////////////////////////////////////////////////////////////
+    if(!init_file.empty()) {
+      if(!validate_file(init_file, 'r'))
+        throw SMITHLABException("bad feature paths file: " + init_file);
+
+      std::ifstream init_in(init_file.c_str());
+      if (!init_in)
+        throw SMITHLABException("bad feature paths file: " + init_file);
+
+      if(VERBOSE)
+        cerr << "INITIALIZING DATABASE FROM FEATURE PATHS" << endl;
+
+      std::chrono::time_point<std::chrono::system_clock> start, end;
+      start = std::chrono::system_clock::now();
+
+      string fv_path;
+      size_t num_features_initialized = 0;
+      while(getline(init_in, fv_path)) {
+        execute_insertion(fv_lookup, hf_lookup, ht_lookup, 
+                          nng, fv_path, eng);
+        num_features_initialized++;
+      }
+
+      end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed = end - start;
+      if(VERBOSE) {
+        cerr << num_features_initialized << " feature vectors inserted" << endl;
+        cerr << "initialization time = " << elapsed.count() << "s\n";
+      }
+    }
+
 
     ////////////////////////////////////////////////////////////////////////
     ///// EXECUTE THE REQUESTS FROM URL ///////////////////////////////////////
