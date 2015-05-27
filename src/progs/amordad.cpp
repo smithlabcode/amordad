@@ -462,7 +462,12 @@ main(int argc, const char **argv) {
     // server parameter
     size_t PORT = 18080;
 
+    // initialize database
     string init_file;
+
+    // results parameter
+    size_t n_neighbors = 30;
+    double max_proximity_radius = 0.75;
 
     /****************** COMMAND LINE OPTIONS ********************/
     OptionParser opt_parse(strip_path(argv[0]), 
@@ -485,6 +490,10 @@ main(int argc, const char **argv) {
                       "(Default: localhost)", false, server);
     opt_parse.add_opt("PORT", 'P', "Port for the server to run at "
                       "(Default: 18080)", false, PORT);
+    opt_parse.add_opt("neighbors", 'N', "number of nearest neighbors to report",
+                      false, n_neighbors);
+    opt_parse.add_opt("mpr", 'r', "maximum proximity radius",
+                      false, max_proximity_radius);
     opt_parse.add_opt("initfile", 'i', "initialize database by providing "
                       "feature paths", false, init_file);
     opt_parse.add_opt("verbose", 'v', "print more run info", false, VERBOSE);
@@ -636,8 +645,6 @@ main(int argc, const char **argv) {
 
         std::chrono::time_point<std::chrono::system_clock> start, end;
         start = std::chrono::system_clock::now();
-        const size_t n_neighbors = 30;
-        const double max_proximity_radius = 0.75;
         vector<Result> result;
         FeatureVector fv = get_feat_vec(fv_path);
         execute_query(fv_lookup, hf_lookup, ht_lookup, 
