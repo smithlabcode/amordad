@@ -84,6 +84,10 @@ operator>>(std::istream &in, FeatureVector &fv) {
       throw SMITHLABException("bad feature vector line: " + line);
     values.push_back(strtod(value.c_str(), 0));
   }
+
+  if(values.empty())
+    throw SMITHLABException("bad feature vector: only with ID");
+
   fv = FeatureVector(id, values);
   return in;
 }
